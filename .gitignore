@@ -102,3 +102,8 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+/.idea/$PRODUCT_WORKSPACE_FILE$
+/.idea/encodings.xml
+/.idea/misc.xml
+/.idea/workspace.xml

@@ -1,0 +1,8 @@
+{
+  "domain": "discord_game",
+  "name": "Discord Game",
+  "documentation": "",
+  "dependencies": [],
+  "codeowners": [],
+  "requirements": ["https://github.com/Rapptz/discord.py/archive/03fdd8153116fe2df16a7227cea731cbfeabf9ec.zip#discord.py[voice]"]
+}
