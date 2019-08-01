@@ -107,3 +107,8 @@ venv.bak/
 /.idea/encodings.xml
 /.idea/misc.xml
 /.idea/workspace.xml
+/.idea/checkstyle-idea.xml
+/.idea/discord_game.iml
+/.idea/modules.xml
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/vcs.xml
