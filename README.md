@@ -2,7 +2,7 @@
 
 This component pulls information about user's status and the game he's currently playing from the Discord.
 
-It creates a sensor for every configured user with online status and game played status.
+It creates a sensor for every configured user with online status and game played status. Discord avatar is used as entity_picture.
 
 ## Configuration:
 
