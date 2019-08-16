@@ -125,10 +125,6 @@ class DiscordAsyncMemberState(Entity):
         return self._avatar_url
 
     @property
-    def hidden(self):
-        return True
-
-    @property
     def device_state_attributes(self):
         """Return the state attributes."""
         return {'game': self._game}
