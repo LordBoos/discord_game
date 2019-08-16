@@ -3,8 +3,7 @@ import logging
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-from homeassistant.components.notify import (
-    PLATFORM_SCHEMA)
+from homeassistant.components.notify import PLATFORM_SCHEMA
 from homeassistant.const import (EVENT_HOMEASSISTANT_STOP, EVENT_HOMEASSISTANT_START)
 from homeassistant.helpers.entity import Entity
 
@@ -23,6 +22,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_TOKEN): cv.string,
     vol.Required(CONF_MEMBERS, default=[]): vol.All(cv.ensure_list, [cv.string]),
 })
+
+
 @asyncio.coroutine
 def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     import discord
@@ -45,50 +46,51 @@ def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     async def on_error(error, *args, **kwargs):
         raise
 
-    def update_discord_entity(discord_member):
-        for watcher in watchers:
-            if watcher.name == "{}".format(discord_member):
-                activity = None
-                if discord_member.activity is not None:
-                    activity = discord_member.activity.name
-                watcher._state = discord_member.status
-                watcher._game = activity
-                watcher.async_schedule_update_ha_state()
+    def update_discord_entity(watcher, discord_member):
+        activity = None
+        if discord_member.activity is not None:
+            activity = discord_member.activity.name
+        watcher._state = discord_member.status
+        watcher._game = activity
+        watcher.async_schedule_update_ha_state()
 
-    def update_discord_entity_user(discord_user):
-        for watcher in watchers:
-            if watcher.name == "{}".format(discord_user):
-                watcher._avatar_id = discord_user.avatar
-                watcher._user_id = discord_user.id
-                watcher.async_schedule_update_ha_state(True)
+    def update_discord_entity_user(watcher, discord_user):
+        watcher._avatar_id = discord_user.avatar
+        watcher._user_id = discord_user.id
+        watcher.async_schedule_update_ha_state(True)
 
     @bot.event
     async def on_ready():
-        for _ in watchers:
-            for member in bot.get_all_members():
-                update_discord_entity(member)
-            for user in bot.users:
-                update_discord_entity_user(user)
+        users = {"{}".format(user): user for user in bot.users}
+        members = {"{}".format(member): member for member in list(bot.get_all_members())}
+        for name, watcher in watchers.items():
+            if users.get(name) is not None:
+                update_discord_entity_user(watcher, users.get(name))
+            if members.get(name) is not None:
+                update_discord_entity(watcher, members.get(name))
 
     @bot.event
     async def on_member_update(before, after):
-        for _ in watchers:
-            update_discord_entity(after)
+        watcher = watchers.get("{}".format(after))
+        if watcher is not None:
+            update_discord_entity(watcher, after)
 
     @bot.event
     async def on_user_update(before, after):
-        for _ in watchers:
-            update_discord_entity_user(after)
+        watcher = watchers.get("{}".format(after))
+        if watcher is not None:
+            update_discord_entity_user(watcher, after)
 
-    watchers = []
+    watchers = {}
     for member in config.get(CONF_MEMBERS):
         watcher = DiscordAsyncMemberState(hass, bot, member)
-        watchers.append(watcher)
+        watchers[watcher.name] = watcher
     if len(watchers) > 0:
-        async_add_entities(watchers)
+        async_add_entities(watchers.values())
         return True
     else:
         return False
+
 
 class DiscordAsyncMemberState(Entity):
     def __init__(self, hass, client, member):

@@ -2,7 +2,7 @@
 
 This component pulls information about user's status and the game he's currently playing from the Discord.
 
-It creates a sensor for every configured user with online status and game played status.
+It creates a sensor for every configured user with online status and game played status. Discord avatar is used as entity_picture.
 
 ## Configuration:
 
@@ -37,3 +37,5 @@ To do that follow bellow steps:
 
 From now on, you can get status of every user on the same server the bot is in.
 For every user you want the sensor for, specify his username (including #XXXX) in the members section of yaml configuration.
+
+Thanks to @descention https://github.com/descention as an original author of this component which I've update for current Discord API and Home Assistant and integrated it with HACS.
