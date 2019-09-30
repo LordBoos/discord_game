@@ -114,7 +114,7 @@ class DiscordAsyncMemberState(Entity):
     @property
     def entity_id(self):
         """Return the entity ID."""
-        return ENTITY_ID_FORMAT.format(self._member.replace("#", "_")).lower()
+        return ENTITY_ID_FORMAT.format(self._member.replace("#", "_").replace(" ", "_")).lower()
 
     @property
     def name(self):
