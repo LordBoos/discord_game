@@ -1,15 +1,17 @@
 import asyncio
+import json
 import logging
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
+from discord import ActivityType, Spotify, Game, Streaming, Activity, Member, User
 from homeassistant.components.notify import PLATFORM_SCHEMA
 from homeassistant.const import (EVENT_HOMEASSISTANT_STOP, EVENT_HOMEASSISTANT_START)
 from homeassistant.helpers.entity import Entity
 
 _LOGGER = logging.getLogger(__name__)
 
-REQUIREMENTS = ['https://github.com/Rapptz/discord.py/archive/03fdd8153116fe2df16a7227cea731cbfeabf9ec.zip#discord.py[voice]']
+REQUIREMENTS = ['discord.py==1.2.4']
 
 CONF_TOKEN = 'token'
 CONF_MEMBERS = 'members'
@@ -46,15 +48,89 @@ def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     async def on_error(error, *args, **kwargs):
         raise
 
-    def update_discord_entity(watcher, discord_member):
-        activity = None
-        if discord_member.activity is not None:
-            activity = discord_member.activity.name
+    def update_discord_entity(watcher: DiscordAsyncMemberState, discord_member: Member):
         watcher._state = discord_member.status
-        watcher._game = activity
+        activity_state = None
+        game = None
+        streaming = None
+        streaming_details = None
+        streaming_url = None
+        listening = None
+        listening_details = None
+        listening_url = None
+        spotify_artists = None
+        spotify_title = None
+        spotify_album = None
+        spotify_album_cover_url = None
+        spotify_track_id = None
+        spotify_duration = None
+        spotify_start = None
+        spotify_end = None
+        watching = None
+        watching_details = None
+        watching_url = None
+
+        for activity in discord_member.activities:
+            if activity.type == ActivityType.playing:
+                activity: Game
+                game = activity.name
+                continue
+            if activity.type == ActivityType.streaming:
+                activity: Streaming
+                streaming = activity.name
+                streaming_details = activity.details
+                streaming_url = activity.url
+                continue
+            if activity.type == ActivityType.listening:
+                if isinstance(activity, Spotify):
+                    activity: Spotify
+                    listening = activity.title
+                    spotify_artists = ", ".join(activity.artists)
+                    spotify_title = activity.title
+                    spotify_album = activity.album
+                    spotify_album_cover_url = activity.album_cover_url
+                    spotify_track_id = activity.track_id
+                    spotify_duration = str(activity.duration)
+                    spotify_start = str(activity.start)
+                    spotify_end = str(activity.end)
+                    continue
+                else:
+                    activity: Activity
+                    activity_state = activity.state
+                    listening = activity.name
+                    listening_details = activity.details
+                    listening_url = activity.url
+                    continue
+            if activity.type == ActivityType.watching:
+                activity: Activity
+                activity_state = activity.state
+                watching = activity.name
+                watching_details = activity.details
+                watching_url = activity.url
+                continue
+
+        watcher._game = game
+        watcher._streaming = streaming
+        watcher._streaming_url = streaming_url
+        watcher._streaming_details = streaming_details
+        watcher._listening = listening
+        watcher._listening_url = listening_url
+        watcher._listening_details = listening_details
+        watcher._spotify_artist = spotify_artists
+        watcher._spotify_title = spotify_title
+        watcher._spotify_album = spotify_album
+        watcher._spotify_album_cover_url = spotify_album_cover_url
+        watcher._spotify_track_id = spotify_track_id
+        watcher._spotify_duration = json.dumps(spotify_duration)
+        watcher._spotify_start = json.dumps(spotify_start)
+        watcher._spotify_end = json.dumps(spotify_end)
+        watcher._watching = watching
+        watcher._watching_url = watching_url
+        watcher._watching_details = watching_details
+        watcher._activity_state = activity_state
         watcher.async_schedule_update_ha_state()
 
-    def update_discord_entity_user(watcher, discord_user):
+    def update_discord_entity_user(watcher: DiscordAsyncMemberState, discord_user: User):
         watcher._avatar_id = discord_user.avatar
         watcher._user_id = discord_user.id
         watcher.async_schedule_update_ha_state(True)
@@ -70,20 +146,20 @@ def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
                 update_discord_entity(watcher, members.get(name))
 
     @bot.event
-    async def on_member_update(before, after):
+    async def on_member_update(before: Member, after: Member):
         watcher = watchers.get("{}".format(after))
         if watcher is not None:
             update_discord_entity(watcher, after)
 
     @bot.event
-    async def on_user_update(before, after):
-        watcher = watchers.get("{}".format(after))
+    async def on_user_update(before: User, after: User):
+        watcher: DiscordAsyncMemberState = watchers.get("{}".format(after))
         if watcher is not None:
             update_discord_entity_user(watcher, after)
 
     watchers = {}
     for member in config.get(CONF_MEMBERS):
-        watcher = DiscordAsyncMemberState(hass, bot, member)
+        watcher: DiscordAsyncMemberState = DiscordAsyncMemberState(hass, bot, member)
         watchers[watcher.name] = watcher
     if len(watchers) > 0:
         async_add_entities(watchers.values())
@@ -99,6 +175,23 @@ class DiscordAsyncMemberState(Entity):
         self._client = client
         self._state = 'unknown'
         self._game = None
+        self._streaming = None
+        self._streaming_url = None
+        self._streaming_details = None
+        self._listening = None
+        self._listening_url = None
+        self._listening_details = None
+        self._spotify_artist = None
+        self._spotify_title = None
+        self._spotify_album = None
+        self._spotify_album_cover_url = None
+        self._spotify_track_id = None
+        self._spotify_duration = None
+        self._spotify_start = None
+        self._spotify_end = None
+        self._watching = None
+        self._watching_url = None
+        self._watching_details = None
         self._avatar_url = None
         self._avatar_id = None
         self._user_id = None
@@ -127,7 +220,26 @@ class DiscordAsyncMemberState(Entity):
     @property
     def device_state_attributes(self):
         """Return the state attributes."""
-        return {'game': self._game}
+        return {
+            'game': self._game,
+            'streaming': self._streaming,
+            'streaming_url': self._streaming_url,
+            'streaming_details': self._streaming_details,
+            'listening': self._listening,
+            'listening_url': self._listening_url,
+            'listening_details': self._listening_details,
+            'spotify_artist': self._spotify_artist,
+            'spotify_title': self._spotify_title,
+            'spotify_album': self._spotify_album,
+            'spotify_album_cover_url': self._spotify_album_cover_url,
+            'spotify_track_id': self._spotify_track_id,
+            'spotify_duration': self._spotify_duration,
+            'spotify_start': self._spotify_start,
+            'spotify_end': self._spotify_end,
+            'watching': self._watching,
+            'watching_url': self._watching_url,
+            'watching_details': self._watching_details
+        }
 
     def update(self):
         if self._user_id is not None and self._avatar_id is not None:
