@@ -4,5 +4,5 @@
   "documentation": "",
   "dependencies": [],
   "codeowners": [],
-  "requirements": ["discord.py==1.2.4"]
+  "requirements": ["git+https://github.com/Rapptz/discord.py@23f16618fdf5fcbeeefed7acb56b579e74bc88d8#egg=discord.py-custom-status"]
 }

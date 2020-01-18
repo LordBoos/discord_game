@@ -4,14 +4,14 @@ import logging
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-from discord import ActivityType, Spotify, Game, Streaming, Activity, Member, User
+from discord import ActivityType, Spotify, Game, Streaming, CustomActivity, Activity, Member, User
 from homeassistant.components.notify import PLATFORM_SCHEMA
 from homeassistant.const import (EVENT_HOMEASSISTANT_STOP, EVENT_HOMEASSISTANT_START)
 from homeassistant.helpers.entity import Entity
 
 _LOGGER = logging.getLogger(__name__)
 
-REQUIREMENTS = ['discord.py==1.2.4']
+REQUIREMENTS = ['discord.py==1.6.0']
 
 CONF_TOKEN = 'token'
 CONF_MEMBERS = 'members'
@@ -69,6 +69,8 @@ def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
         watching = None
         watching_details = None
         watching_url = None
+        custom_status = None
+        custom_emoji = None
 
         for activity in discord_member.activities:
             if activity.type == ActivityType.playing:
@@ -108,6 +110,12 @@ def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
                 watching_details = activity.details
                 watching_url = activity.url
                 continue
+            if activity.type == ActivityType.custom:
+                activity: CustomActivity
+                activity_state = activity.state
+                custom_status = activity.name
+                custom_emoji = activity.emoji.name
+                continue
 
         watcher._game = game
         watcher._streaming = streaming
@@ -128,6 +136,8 @@ def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
         watcher._watching_url = watching_url
         watcher._watching_details = watching_details
         watcher._activity_state = activity_state
+        watcher._custom_status = custom_status
+        watcher._custom_emoji = custom_emoji
         watcher.async_schedule_update_ha_state()
 
     def update_discord_entity_user(watcher: DiscordAsyncMemberState, discord_user: User):
@@ -195,6 +205,8 @@ class DiscordAsyncMemberState(Entity):
         self._avatar_url = None
         self._avatar_id = None
         self._user_id = None
+        self._custom_status = None
+        self._custom_emoji = None
 
     @property
     def should_poll(self) -> bool:
@@ -238,7 +250,9 @@ class DiscordAsyncMemberState(Entity):
             'spotify_end': self._spotify_end,
             'watching': self._watching,
             'watching_url': self._watching_url,
-            'watching_details': self._watching_details
+            'watching_details': self._watching_details,
+            'custom_status': self._custom_status,
+            'custom_emoji': self._custom_emoji
         }
 
     def update(self):
