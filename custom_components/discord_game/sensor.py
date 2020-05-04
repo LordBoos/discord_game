@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import re
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
@@ -219,7 +220,9 @@ class DiscordAsyncMemberState(Entity):
     @property
     def entity_id(self):
         """Return the entity ID."""
-        return ENTITY_ID_FORMAT.format(self._member.replace("#", "_").replace(" ", "_").replace(".", "_")).lower()
+        # 1st Regex; keep a-z0-9 [](){} characters, replace with "_"
+        # 2nd Regex; keep only a-z0-9_ characters, replace with ""
+        return ENTITY_ID_FORMAT.format(re.sub('[^a-z0-9_]', '', re.sub('[^a-z0-9 \[\]\(\)\{\}]', '_', self._member.lower())))
 
     @property
     def name(self):
