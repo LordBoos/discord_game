@@ -222,7 +222,7 @@ class DiscordAsyncMemberState(Entity):
         """Return the entity ID."""
         # 1st Regex; keep a-z0-9 [](){} characters, replace with "_"
         # 2nd Regex; keep only a-z0-9_ characters, replace with ""
-        return ENTITY_ID_FORMAT.format(re.sub('[^a-z0-9_]', '', re.sub('[^a-z0-9 \[\]\(\)\{\}]', '_', self._member.lower())))
+        return ENTITY_ID_FORMAT.format(re.sub('[^a-z0-9_]', '', re.sub('[^a-z0-9 \[\]\(\)\{\}\"\']', '_', self._member.lower())))
 
     @property
     def name(self):
