@@ -10,6 +10,7 @@ It creates a sensor for every configured user with online status and game played
 sensor:
   - platform: discord_game
     token: secretDiscordBotToken
+    image_format: webp            # optional, available formats are: png, webp, jpeg, jpg
     members:
       - Username1#1234
       - Username2#1234
@@ -26,7 +27,7 @@ To create a bot user and get a token:
 6. Uncheck PUBLIC BOT
 7. Click Save changes on the bottom of the page
 8. Under Token, click on Copy
-9. Now paste your token to the yaml configuration of HA replacing "secretDiscordBotToken" in the example above
+9. Now paste your token to the yaml configuration of HA replacing `secretDiscordBotToken` in the example above
 
 You also need your own discord server (or some server where you have admin rights) and you need to invite the bot to that server.
 To do that follow bellow steps:
@@ -37,6 +38,8 @@ To do that follow bellow steps:
 
 From now on, you can get status of every user on the same server the bot is in.
 For every user you want the sensor for, specify his username (including #XXXX) in the members section of yaml configuration.
+
+If you are using Safari or the iOS Home Assistant app, please set the `image_format` to `png`, because Safari doesn't support the `webp` image format.
 
 Thanks to @descention https://github.com/descention for an original component idea and component itself which I've rewrote for current Discord
  API and Home Assistant and integrated it with HACS.
