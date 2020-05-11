@@ -260,4 +260,4 @@ class DiscordAsyncMemberState(Entity):
 
     def update(self):
         if self._user_id is not None and self._avatar_id is not None:
-            self._avatar_url = 'https://cdn.discordapp.com/avatars/' + str(self._user_id) + '/' + str(self._avatar_id) + '.webp?size=1024'
+            self._avatar_url = 'https://cdn.discordapp.com/avatars/' + str(self._user_id) + '/' + str(self._avatar_id) + '.png?size=1024'
