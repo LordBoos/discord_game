@@ -118,7 +118,7 @@ def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
                 activity: CustomActivity
                 activity_state = activity.state
                 custom_status = activity.name
-                custom_emoji = activity.emoji.name
+                custom_emoji = activity.emoji.name if activity.emoji else None
                 continue
 
         watcher._game = game
