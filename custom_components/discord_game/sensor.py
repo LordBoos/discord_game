@@ -56,6 +56,12 @@ def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
         watcher._state = discord_member.status
         activity_state = None
         game = None
+        game_state = None
+        game_details = None
+        game_image_small = None
+        game_image_large = None
+        game_image_small_text = None
+        game_image_large_text = None
         streaming = None
         streaming_details = None
         streaming_url = None
@@ -78,8 +84,14 @@ def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
 
         for activity in discord_member.activities:
             if activity.type == ActivityType.playing:
-                activity: Game
+                activity: Activity
                 game = activity.name
+                game_state = activity.state
+                game_details = activity.details
+                game_image_small = activity.small_image_url
+                game_image_large = activity.large_image_url
+                game_image_small_text = activity.small_image_text
+                game_image_large_text = activity.large_image_text
                 continue
             if activity.type == ActivityType.streaming:
                 activity: Streaming
@@ -122,6 +134,12 @@ def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
                 continue
 
         watcher._game = game
+        watcher._game_state = game_state
+        watcher._game_details = game_details
+        watcher._game_image_small = game_image_small
+        watcher._game_image_large = game_image_large
+        watcher._game_image_small_text = game_image_small_text
+        watcher._game_image_large_text = game_image_large_text
         watcher._streaming = streaming
         watcher._streaming_url = streaming_url
         watcher._streaming_details = streaming_details
@@ -189,6 +207,12 @@ class DiscordAsyncMemberState(Entity):
         self._client = client
         self._state = 'unknown'
         self._game = None
+        self._game_state = None
+        self._game_details = None
+        self._game_image_small = None
+        self._game_image_large = None
+        self._game_image_small_text = None
+        self._game_image_large_text = None
         self._streaming = None
         self._streaming_url = None
         self._streaming_details = None
@@ -238,7 +262,14 @@ class DiscordAsyncMemberState(Entity):
     def device_state_attributes(self):
         """Return the state attributes."""
         return {
+            'avatar_url': self._avatar_url,
             'game': self._game,
+            'game_state': self._game_state,
+            'game_details': self._game_details,
+            'game_image_small': self._game_image_small,
+            'game_image_large': self._game_image_large,
+            'game_image_small_text': self._game_image_small_text,
+            'game_image_large_text': self._game_image_large_text,
             'streaming': self._streaming,
             'streaming_url': self._streaming_url,
             'streaming_details': self._streaming_details,
