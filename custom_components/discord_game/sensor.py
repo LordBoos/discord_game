@@ -84,15 +84,20 @@ def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
 
         for activity in discord_member.activities:
             if activity.type == ActivityType.playing:
-                activity: Activity
-                game = activity.name
-                game_state = activity.state
-                game_details = activity.details
-                game_image_small = activity.small_image_url
-                game_image_large = activity.large_image_url
-                game_image_small_text = activity.small_image_text
-                game_image_large_text = activity.large_image_text
-                continue
+                if isinstance(activity, Game):
+                    activity: Game
+                    game = activity.name
+                    continue
+                else:
+                    activity: Activity
+                    game = activity.name
+                    game_state = activity.state
+                    game_details = activity.details
+                    game_image_small = activity.small_image_url
+                    game_image_large = activity.large_image_url
+                    game_image_small_text = activity.small_image_text
+                    game_image_large_text = activity.large_image_text
+                    continue
             if activity.type == ActivityType.streaming:
                 activity: Streaming
                 streaming = activity.name
