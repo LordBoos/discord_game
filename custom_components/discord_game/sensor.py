@@ -29,22 +29,19 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
-@asyncio.coroutine
-def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
+async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     import discord
     token = config.get(CONF_TOKEN)
     image_format = config.get(CONF_IMAGE_FORMAT)
     bot = discord.Client(loop=hass.loop)
-    yield from bot.login(token)
+    await bot.login(token)
 
-    @asyncio.coroutine
-    def async_stop_server(event):
-        yield from bot.logout()
+    async def async_stop_server(event):
+        await bot.logout()
 
-    @asyncio.coroutine
-    def start_server(event):
+    async def start_server(event):
         hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, async_stop_server)
-        yield from bot.start(token)
+        await bot.start(token)
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_START, start_server)
 
