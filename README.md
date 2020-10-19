@@ -14,6 +14,7 @@ sensor:
     members:
       - Username1#1234
       - Username2#1234
+      - 1234567890
 ```
 
 You have to create a Discord bot user and get it's token to be able to use this component.

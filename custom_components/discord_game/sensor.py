@@ -196,6 +196,11 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         if re.match(r"^.*#[0-9]{4}", member):
             watcher: DiscordAsyncMemberState = DiscordAsyncMemberState(hass, bot, member)
             watchers[watcher.name] = watcher
+        elif re.match(r"^[0-9]{,20}", member): #Up to 20 digits because 2^64 (snowflake-length) is 20 digits long
+            user = await bot.fetch_user(member)
+            if user:
+                watcher: DiscordAsyncMemberState = DiscordAsyncMemberState(hass, bot, "{}#{}".format(user.name,user.discriminator))
+                watchers[watcher.name] = watcher
     if len(watchers) > 0:
         async_add_entities(watchers.values())
         return True
