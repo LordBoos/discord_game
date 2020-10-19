@@ -193,8 +193,9 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     watchers = {}
     for member in config.get(CONF_MEMBERS):
-        watcher: DiscordAsyncMemberState = DiscordAsyncMemberState(hass, bot, member)
-        watchers[watcher.name] = watcher
+        if re.match(r"^.*#[0-9]{4}", member):
+            watcher: DiscordAsyncMemberState = DiscordAsyncMemberState(hass, bot, member)
+            watchers[watcher.name] = watcher
     if len(watchers) > 0:
         async_add_entities(watchers.values())
         return True
