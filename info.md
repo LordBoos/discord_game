@@ -14,6 +14,7 @@ sensor:
     members:
       - Username1#1234
       - Username2#1234
+      - 1234567890
 ```
 
 You have to create a Discord bot user and get it's token to be able to use this component.
@@ -37,7 +38,7 @@ To do that follow bellow steps:
 4. Select server to which you want to invite the bot and press Authorize
 
 From now on, you can get status of every user on the same server the bot is in.
-For every user you want the sensor for, specify his username (including #XXXX) in the members section of yaml configuration.
+For every user you want the sensor for, specify his username including #XXXX or his user ID (right click user in your server and select Copy ID) in the members section of yaml configuration.
 
 If you are using Safari or the iOS Home Assistant app, please set the `image_format` to `png`, because Safari doesn't support the `webp` image format.
 
