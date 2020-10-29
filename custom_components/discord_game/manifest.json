@@ -4,5 +4,5 @@
   "documentation": "",
   "dependencies": [],
   "codeowners": [],
-  "requirements": ["discord.py==1.3.4"]
+  "requirements": ["discord.py==1.5.1"]
 }
