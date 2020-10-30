@@ -12,7 +12,7 @@ from homeassistant.helpers.entity import Entity
 
 _LOGGER = logging.getLogger(__name__)
 
-REQUIREMENTS = ['discord.py==1.6.0']
+REQUIREMENTS = ['discord.py==1.5.1']
 
 CONF_TOKEN = 'token'
 CONF_MEMBERS = 'members'
@@ -33,7 +33,12 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     import discord
     token = config.get(CONF_TOKEN)
     image_format = config.get(CONF_IMAGE_FORMAT)
-    bot = discord.Client(loop=hass.loop)
+
+    intents = discord.Intents.default()
+    intents.members = True
+    intents.presences = True
+
+    bot = discord.Client(loop=hass.loop, intents=intents)
     await bot.login(token)
 
     async def async_stop_server(event):
