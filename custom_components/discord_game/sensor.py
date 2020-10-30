@@ -12,7 +12,7 @@ from homeassistant.helpers.entity import Entity
 
 _LOGGER = logging.getLogger(__name__)
 
-REQUIREMENTS = ['discord.py==1.6.0']
+REQUIREMENTS = ['discord.py==1.5.1']
 
 CONF_TOKEN = 'token'
 CONF_MEMBERS = 'members'
