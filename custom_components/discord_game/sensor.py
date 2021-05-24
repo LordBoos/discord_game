@@ -127,12 +127,14 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 watcher._activity_state = activity.state
                 watcher._custom_status = activity.name
                 watcher._custom_emoji = activity.emoji.name if activity.emoji else None
+                watcher.async_schedule_update_ha_state(True)
 
     def update_discord_entity_user(watcher: DiscordAsyncMemberState, discord_user: User):
         watcher._avatar_url = discord_user.avatar_url_as(format=None, static_format=image_format, size=1024).__str__()
         watcher._userid = discord_user.id
         watcher._member = discord_user.name + '#' + discord_user.discriminator
         watcher._user_name = discord_user.name
+        watcher.async_schedule_update_ha_state(True)
 
     @bot.event
     async def on_ready():
@@ -150,7 +152,6 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         watcher = watchers.get("{}".format(after))
         if watcher is not None:
             update_discord_entity(watcher, after)
-            watcher.async_schedule_update_ha_state(True)
 
     # noinspection PyUnusedLocal
     @bot.event
@@ -158,7 +159,6 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         watcher: DiscordAsyncMemberState = watchers.get("{}".format(after))
         if watcher is not None:
             update_discord_entity_user(watcher, after)
-            watcher.async_schedule_update_ha_state(True)
 
     # noinspection PyUnusedLocal
     @bot.event
