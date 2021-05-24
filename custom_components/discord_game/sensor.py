@@ -3,7 +3,7 @@ import re
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-from discord import ActivityType, Spotify, Game, Streaming, CustomActivity, Activity, Member, User
+from discord import ActivityType, Spotify, Game, Streaming, CustomActivity, Activity, Member, User, VoiceState
 from homeassistant.components.notify import PLATFORM_SCHEMA
 from homeassistant.const import (EVENT_HOMEASSISTANT_STOP, EVENT_HOMEASSISTANT_START)
 from homeassistant.helpers.entity import Entity
@@ -26,7 +26,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_IMAGE_FORMAT, default='webp'): vol.In(['png', 'webp', 'jpeg', 'jpg']),
 })
 
-
+# noinspection PyUnusedLocal
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     import discord
     token = config.get(CONF_TOKEN)
@@ -39,15 +39,18 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     bot = discord.Client(loop=hass.loop, intents=intents)
     await bot.login(token)
 
+    # noinspection PyUnusedLocal
     async def async_stop_server(event):
         await bot.logout()
 
+    # noinspection PyUnusedLocal
     async def start_server(event):
         hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, async_stop_server)
         await bot.start(token)
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_START, start_server)
 
+    # noinspection PyUnusedLocal
     @bot.event
     async def on_error(error, *args, **kwargs):
         raise
@@ -56,6 +59,18 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         watcher._state = discord_member.status
         watcher._roles = [role.name for role in discord_member.roles]
         watcher._display_name = discord_member.display_name
+        if discord_member.voice is not None:
+            if discord_member.voice.channel is not None:
+                watcher._voice_channel = discord_member.voice.channel.name
+            else:
+                watcher._voice_channel = None
+            watcher._voice_deaf = discord_member.voice.deaf
+            watcher._voice_mute = discord_member.voice.mute
+            watcher._voice_self_deaf = discord_member.voice.self_deaf
+            watcher._voice_self_mute = discord_member.voice.self_mute
+            watcher._voice_self_stream = discord_member.voice.self_stream
+            watcher._voice_self_video = discord_member.voice.self_video
+            watcher._voice_afk = discord_member.voice.afk
 
         for activity in discord_member.activities:
             if activity.type == ActivityType.playing:
@@ -128,6 +143,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 update_discord_entity(watcher, members.get(name))
         async_add_entities(watchers.values())
 
+    # noinspection PyUnusedLocal
     @bot.event
     async def on_member_update(before: Member, after: Member):
         watcher = watchers.get("{}".format(after))
@@ -135,12 +151,32 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             update_discord_entity(watcher, after)
             watcher.async_schedule_update_ha_state(True)
 
+    # noinspection PyUnusedLocal
     @bot.event
     async def on_user_update(before: User, after: User):
         watcher: DiscordAsyncMemberState = watchers.get("{}".format(after))
         if watcher is not None:
             update_discord_entity_user(watcher, after)
             watcher.async_schedule_update_ha_state(True)
+
+    # noinspection PyUnusedLocal
+    @bot.event
+    async def on_voice_state_update(member: Member, before: VoiceState, after: VoiceState):
+        watcher = watchers.get("{}".format(member))
+        if watcher is not None:
+            if after.channel is not None:
+                watcher._voice_channel = after.channel.name
+            else:
+                watcher._voice_channel = None
+            watcher._voice_deaf = after.deaf
+            watcher._voice_mute = after.mute
+            watcher._voice_self_deaf = after.self_deaf
+            watcher._voice_self_mute = after.self_mute
+            watcher._voice_self_stream = after.self_stream
+            watcher._voice_self_video = after.self_video
+            watcher._voice_afk = after.afk
+            watcher.async_schedule_update_ha_state(True)
+
 
     watchers = {}
     for member in config.get(CONF_MEMBERS):
@@ -195,6 +231,14 @@ class DiscordAsyncMemberState(Entity):
         self._avatar_url = None
         self._custom_status = None
         self._custom_emoji = None
+        self._voice_channel = None
+        self._voice_deaf = None
+        self._voice_mute = None
+        self._voice_self_deaf = None
+        self._voice_self_mute = None
+        self._voice_self_stream = None
+        self._voice_self_video = None
+        self._voice_afk = None
 
     @property
     def should_poll(self) -> bool:
@@ -252,5 +296,13 @@ class DiscordAsyncMemberState(Entity):
             'watching_url': self._watching_url,
             'watching_details': self._watching_details,
             'custom_status': self._custom_status,
-            'custom_emoji': self._custom_emoji
+            'custom_emoji': self._custom_emoji,
+            'voice_channel': self._voice_channel,
+            'voice_server_deafened': self._voice_deaf,
+            'voice_server_muted': self._voice_mute,
+            'voice_self_deafened': self._voice_self_deaf,
+            'voice_self_muted': self._voice_self_mute,
+            'voice_self_streaming': self._voice_self_stream,
+            'voice_self_broadcasting_video': self._voice_self_video,
+            'voice_afk': self._voice_afk
         }
