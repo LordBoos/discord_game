@@ -301,7 +301,7 @@ class DiscordAsyncMemberState(Entity):
             'voice_server_muted': self._voice_mute,
             'voice_self_deafened': self._voice_self_deaf,
             'voice_self_muted': self._voice_self_mute,
-            'voice_self_streaming': self._voice_self_stream,
-            'voice_self_broadcasting_video': self._voice_self_video,
+            'voice_streaming': self._voice_self_stream,
+            'voice_broadcasting_video': self._voice_self_video,
             'voice_afk': self._voice_afk
         }
