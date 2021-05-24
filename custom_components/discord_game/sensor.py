@@ -127,7 +127,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 watcher._activity_state = activity.state
                 watcher._custom_status = activity.name
                 watcher._custom_emoji = activity.emoji.name if activity.emoji else None
-                watcher.async_schedule_update_ha_state(True)
+        watcher.async_schedule_update_ha_state(True)
 
     def update_discord_entity_user(watcher: DiscordAsyncMemberState, discord_user: User):
         watcher._avatar_url = discord_user.avatar_url_as(format=None, static_format=image_format, size=1024).__str__()
