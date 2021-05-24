@@ -254,6 +254,14 @@ class DiscordAsyncMemberState(Entity):
             return ENTITY_ID_FORMAT.format(self._userid)
 
     @property
+    def unique_id(self):
+        """Return a unique ID."""
+        if self._userid is not None:
+            return ENTITY_ID_FORMAT.format(self._userid)
+        else:
+            return None
+
+    @property
     def name(self):
         return self._member
 
