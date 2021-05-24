@@ -1,9 +1,10 @@
 # Discord user game status Custom Component (for Home Assistant)
 
-This component pulls information about user's status and the game he's currently playing from the Discord.
+This component pulls information about user's status, and the game he's currently playing from the Discord.
 It creates a sensor for every configured user with online status and game played status. Discord avatar is used as entity_picture.
 
-You can use this component in combination with native Home Assisntant Discord notify integration. It works well together and you can use the same token for both components and the bot will combine both functions. So 1 Discord bot to rule both.
+You can use this component in combination with native Home Assistant Discord notify integration. It works well together, and you can use the 
+same token for both components, and the bot will combine both functions. So 1 Discord bot to rule both.
 
 ## Configuration:
 
@@ -42,9 +43,9 @@ To do that follow bellow steps:
 4. Select server to which you want to invite the bot and press Authorize
 
 From now on, you can get status of every user on the same server the bot is in.
-For every user you want the sensor for, specify his username including #XXXX or his user ID (right click user in your server and select Copy ID) in the members section of yaml configuration.
+For every user you want the sensor for, specify his username including #XXXX, or his user ID (right click user in your server and select Copy ID) in the members section of yaml configuration.
 
 If you are using Safari or the iOS Home Assistant app, please set the `image_format` to `png`, because Safari doesn't support the `webp` image format.
 
-Thanks to @descention https://github.com/descention for an original component idea and component itself which I've rewrote for current Discord
+Thanks to @descention https://github.com/descention for an original component idea and component itself which I've rewritten for current Discord
  API and Home Assistant and integrated it with HACS.

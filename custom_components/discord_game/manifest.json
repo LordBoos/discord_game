@@ -1,7 +1,7 @@
 {
   "domain": "discord_game",
   "name": "Discord Game",
-  "version":"3.3.2",
+  "version":"3.4.0",
   "documentation": "",
   "dependencies": [],
   "codeowners": [],
