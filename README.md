@@ -14,9 +14,9 @@ sensor:
     token: secretDiscordBotToken
     image_format: webp            # optional, available formats are: png, webp, jpeg, jpg
     members:
-      - Username1#1234
-      - Username2#1234
       - 1234567890
+      - 0987654321
+      - 12345678900987654321
 ```
 
 You have to create a Discord bot user and get it's token to be able to use this component.
@@ -43,8 +43,16 @@ To do that follow bellow steps:
 4. Select server to which you want to invite the bot and press Authorize
 
 From now on, you can get status of every user on the same server the bot is in.
-For every user you want the sensor for, specify his username including #XXXX, or his user ID (right click user in your server and select Copy 
-ID) in the members section of yaml configuration.
+For every user you want the sensor for his user ID in the members section of yaml configuration.
+
+To get user ID you need to perform following steps:
+1. Open Discord
+2. Go to User Settings (Cog icon next to your name in bottom left part of Discord window)
+3. Go to Advanced
+4. Enable Developer Mode
+5. Close settings
+6. Right click on any user on your Server that you want to Add to this integration
+7. Select Copy
 
 If you are using Safari or the iOS Home Assistant app, please set the `image_format` to `png`, because Safari doesn't support the `webp` image format.
 

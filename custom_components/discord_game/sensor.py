@@ -1,5 +1,6 @@
 import logging
 import re
+import time
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
@@ -131,6 +132,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         watcher._avatar_url = discord_user.avatar_url_as(format=None, static_format=image_format, size=1024).__str__()
         watcher._userid = discord_user.id
         watcher._member = discord_user.name + '#' + discord_user.discriminator
+        watcher._user_name = discord_user.name
 
     @bot.event
     async def on_ready():
@@ -141,7 +143,6 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 update_discord_entity_user(watcher, users.get(name))
             if members.get(name) is not None:
                 update_discord_entity(watcher, members.get(name))
-        async_add_entities(watchers.values())
 
     # noinspection PyUnusedLocal
     @bot.event
@@ -177,19 +178,16 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             watcher._voice_afk = after.afk
             watcher.async_schedule_update_ha_state(True)
 
-
     watchers = {}
     for member in config.get(CONF_MEMBERS):
-        if re.match(r"^.*#[0-9]{4}", member):
-            watcher: DiscordAsyncMemberState = DiscordAsyncMemberState(hass, bot, member, None)
-            watchers[watcher.name] = watcher
-        elif re.match(r"^[0-9]{,20}", member):  # Up to 20 digits because 2^64 (snowflake-length) is 20 digits long
+        if re.match(r"^[0-9]{,20}", member):  # Up to 20 digits because 2^64 (snowflake-length) is 20 digits long
             user = await bot.fetch_user(member)
             if user:
                 watcher: DiscordAsyncMemberState = \
                     DiscordAsyncMemberState(hass, bot, "{}#{}".format(user.name, user.discriminator), user.id)
                 watchers[watcher.name] = watcher
     if len(watchers) > 0:
+        async_add_entities(watchers.values())
         return True
     else:
         return False
@@ -202,6 +200,7 @@ class DiscordAsyncMemberState(Entity):
         self._hass = hass
         self._client = client
         self._state = 'unknown'
+        self._user_name = None
         self._display_name = None
         self._roles = None
         self._game = None
@@ -268,7 +267,7 @@ class DiscordAsyncMemberState(Entity):
         return {
             'avatar_url': self._avatar_url,
             'user_id': self._userid,
-            'user_name': self._member,
+            'user_name': self._user_name,
             'display_name': self._display_name,
             'roles': self._roles,
             'game': self._game,
