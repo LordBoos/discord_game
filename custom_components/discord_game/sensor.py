@@ -1,6 +1,5 @@
 import logging
 import re
-import time
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
@@ -26,6 +25,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_MEMBERS, default=[]): vol.All(cv.ensure_list, [cv.string]),
     vol.Optional(CONF_IMAGE_FORMAT, default='webp'): vol.In(['png', 'webp', 'jpeg', 'jpg']),
 })
+
 
 # noinspection PyUnusedLocal
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
@@ -193,7 +193,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         return False
 
 
-class DiscordAsyncMemberState(Entity):
+class DiscordAsyncMemberState(SensorEntity):
     def __init__(self, hass, client, member, userid):
         self._member = member
         self._userid = userid
@@ -248,18 +248,9 @@ class DiscordAsyncMemberState(Entity):
         return self._state
 
     @property
-    def entity_id(self):
-        """Return the entity ID."""
-        if self._userid is not None:
-            return ENTITY_ID_FORMAT.format(self._userid)
-
-    @property
     def unique_id(self):
         """Return a unique ID."""
-        if self._userid is not None:
-            return ENTITY_ID_FORMAT.format(self._userid)
-        else:
-            return None
+        return ENTITY_ID_FORMAT.format(self._userid)
 
     @property
     def name(self):
