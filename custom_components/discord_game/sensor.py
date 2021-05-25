@@ -4,9 +4,8 @@ import re
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from discord import ActivityType, Spotify, Game, Streaming, CustomActivity, Activity, Member, User, VoiceState
-from homeassistant.components.notify import PLATFORM_SCHEMA
+from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
 from homeassistant.const import (EVENT_HOMEASSISTANT_STOP, EVENT_HOMEASSISTANT_START)
-from homeassistant.helpers.entity import Entity
 
 _LOGGER = logging.getLogger(__name__)
 
