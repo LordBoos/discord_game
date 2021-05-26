@@ -59,73 +59,144 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         watcher._state = discord_member.status
         watcher._roles = [role.name for role in discord_member.roles]
         watcher._display_name = discord_member.display_name
+        activity_state = None
+        game = None
+        game_state = None
+        game_details = None
+        game_image_small = None
+        game_image_large = None
+        game_image_small_text = None
+        game_image_large_text = None
+        streaming = None
+        streaming_details = None
+        streaming_url = None
+        listening = None
+        listening_details = None
+        listening_url = None
+        spotify_artists = None
+        spotify_title = None
+        spotify_album = None
+        spotify_album_cover_url = None
+        spotify_track_id = None
+        spotify_duration = None
+        spotify_start = None
+        spotify_end = None
+        watching = None
+        watching_details = None
+        watching_url = None
+        custom_status = None
+        custom_emoji = None
+        voice_deaf = None
+        voice_mute = None
+        voice_self_deaf = None
+        voice_self_mute = None
+        voice_self_stream = None
+        voice_self_video = None
+        voice_afk = None
+        voice_channel = None
         if discord_member.voice is not None:
             if discord_member.voice.channel is not None:
-                watcher._voice_channel = discord_member.voice.channel.name
+                voice_channel = discord_member.voice.channel.name
             else:
-                watcher._voice_channel = None
-            watcher._voice_deaf = discord_member.voice.deaf
-            watcher._voice_mute = discord_member.voice.mute
-            watcher._voice_self_deaf = discord_member.voice.self_deaf
-            watcher._voice_self_mute = discord_member.voice.self_mute
-            watcher._voice_self_stream = discord_member.voice.self_stream
-            watcher._voice_self_video = discord_member.voice.self_video
-            watcher._voice_afk = discord_member.voice.afk
+                voice_channel = None
+            voice_deaf = discord_member.voice.deaf
+            voice_mute = discord_member.voice.mute
+            voice_self_deaf = discord_member.voice.self_deaf
+            voice_self_mute = discord_member.voice.self_mute
+            voice_self_stream = discord_member.voice.self_stream
+            voice_self_video = discord_member.voice.self_video
+            voice_afk = discord_member.voice.afk
 
         for activity in discord_member.activities:
             if activity.type == ActivityType.playing:
                 if isinstance(activity, Game):
                     activity: Game
-                    watcher._game = activity.name
+                    game = activity.name
                     continue
                 else:
                     activity: Activity
-                    watcher._game = activity.name
-                    watcher._game_state = activity.state
-                    watcher._game_details = activity.details
-                    watcher._game_image_small = activity.small_image_url
-                    watcher._game_image_large = activity.large_image_url
-                    watcher._game_image_small_text = activity.small_image_text
-                    watcher._game_image_large_text = activity.large_image_text
+                    game = activity.name
+                    game_state = activity.state
+                    game_details = activity.details
+                    game_image_small = activity.small_image_url
+                    game_image_large = activity.large_image_url
+                    game_image_small_text = activity.small_image_text
+                    game_image_large_text = activity.large_image_text
                     continue
             if activity.type == ActivityType.streaming:
                 activity: Streaming
-                watcher._streaming = activity.name
-                watcher._streaming_details = activity.details
-                watcher._streaming_url = activity.url
+                streaming = activity.name
+                streaming_details = activity.details
+                streaming_url = activity.url
                 continue
             if activity.type == ActivityType.listening:
                 if isinstance(activity, Spotify):
                     activity: Spotify
-                    watcher._listening = activity.title
-                    watcher._spotify_artists = ", ".join(activity.artists)
-                    watcher._spotify_title = activity.title
-                    watcher._spotify_album = activity.album
-                    watcher._spotify_album_cover_url = activity.album_cover_url
-                    watcher._spotify_track_id = activity.track_id
-                    watcher._spotify_duration = str(activity.duration)
-                    watcher._spotify_start = str(activity.start)
-                    watcher._spotify_end = str(activity.end)
+                    listening = activity.title
+                    spotify_artists = ", ".join(activity.artists)
+                    spotify_title = activity.title
+                    spotify_album = activity.album
+                    spotify_album_cover_url = activity.album_cover_url
+                    spotify_track_id = activity.track_id
+                    spotify_duration = str(activity.duration)
+                    spotify_start = str(activity.start)
+                    spotify_end = str(activity.end)
                     continue
                 else:
                     activity: Activity
-                    watcher._activity_state = activity.state
-                    watcher._listening = activity.name
-                    watcher._listening_details = activity.details
-                    watcher._listening_url = activity.url
+                    activity_state = activity.state
+                    listening = activity.name
+                    listening_details = activity.details
+                    listening_url = activity.url
                     continue
             if activity.type == ActivityType.watching:
                 activity: Activity
-                watcher._activity_state = activity.state
-                watcher._watching = activity.name
-                watcher._watching_details = activity.details
-                watcher._watching_url = activity.url
+                activity_state = activity.state
+                watching = activity.name
+                watching_details = activity.details
+                watching_url = activity.url
                 continue
             if activity.type == ActivityType.custom:
                 activity: CustomActivity
-                watcher._activity_state = activity.state
-                watcher._custom_status = activity.name
-                watcher._custom_emoji = activity.emoji.name if activity.emoji else None
+                activity_state = activity.state
+                custom_status = activity.name
+                custom_emoji = activity.emoji.name if activity.emoji else None
+
+        watcher._game = game
+        watcher._game_state = game_state
+        watcher._game_details = game_details
+        watcher._game_image_small = game_image_small
+        watcher._game_image_large = game_image_large
+        watcher._game_image_small_text = game_image_small_text
+        watcher._game_image_large_text = game_image_large_text
+        watcher._streaming = streaming
+        watcher._streaming_url = streaming_url
+        watcher._streaming_details = streaming_details
+        watcher._listening = listening
+        watcher._listening_url = listening_url
+        watcher._listening_details = listening_details
+        watcher._spotify_artist = spotify_artists
+        watcher._spotify_title = spotify_title
+        watcher._spotify_album = spotify_album
+        watcher._spotify_album_cover_url = spotify_album_cover_url
+        watcher._spotify_track_id = spotify_track_id
+        watcher._spotify_duration = spotify_duration
+        watcher._spotify_start = spotify_start
+        watcher._spotify_end = spotify_end
+        watcher._watching = watching
+        watcher._watching_url = watching_url
+        watcher._watching_details = watching_details
+        watcher._activity_state = activity_state
+        watcher._custom_status = custom_status
+        watcher._custom_emoji = custom_emoji
+        watcher._voice_deaf = voice_deaf
+        watcher._voice_mute = voice_mute
+        watcher._voice_self_deaf = voice_self_deaf
+        watcher._voice_self_mute = voice_self_mute
+        watcher._voice_self_stream = voice_self_stream
+        watcher._voice_self_video = voice_self_video
+        watcher._voice_afk = voice_afk
+        watcher._voice_channel = voice_channel
         watcher.async_schedule_update_ha_state(True)
 
     def update_discord_entity_user(watcher: DiscordAsyncMemberState, discord_user: User):
