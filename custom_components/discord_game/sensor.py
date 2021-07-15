@@ -8,7 +8,8 @@ import aiohttp
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from addict import Dict
-from nextcord import ActivityType, Spotify, Game, Streaming, CustomActivity, Activity, Member, User, VoiceState
+from nextcord import ActivityType, Spotify, Game, Streaming, CustomActivity, Activity, Member, User, VoiceState, TextChannel, \
+    RawReactionActionEvent
 from nextcord.ext import tasks
 from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
 from homeassistant.const import (EVENT_HOMEASSISTANT_STOP, EVENT_HOMEASSISTANT_START)
@@ -19,11 +20,13 @@ REQUIREMENTS = ['nextcord==2.0.0a8']
 
 CONF_TOKEN = 'token'
 CONF_MEMBERS = 'members'
+CONF_CHANNELS = 'channels'
 CONF_IMAGE_FORMAT = 'image_format'
 
 DOMAIN = 'sensor'
 
 ENTITY_ID_FORMAT = "sensor.discord_user_{}"
+ENTITY_ID_CHANNEL_FORMAT = "sensor.discord_channel_{}"
 
 app_list = []
 steam_app_list = []
@@ -31,6 +34,7 @@ steam_app_list = []
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_TOKEN): cv.string,
     vol.Required(CONF_MEMBERS, default=[]): vol.All(cv.ensure_list, [cv.string]),
+    vol.Required(CONF_CHANNELS, default=[]): vol.All(cv.ensure_list, [cv.string]),
     vol.Optional(CONF_IMAGE_FORMAT, default='webp'): vol.In(['png', 'webp', 'jpeg', 'jpg']),
 })
 
@@ -287,6 +291,8 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 await update_discord_entity_user(watcher, users.get(name))
             if members.get(name) is not None:
                 await update_discord_entity(watcher, members.get(name))
+        for name, chan in channels.items():
+            chan.async_schedule_update_ha_state(True)
 
     # noinspection PyUnusedLocal
     @bot.event
@@ -320,6 +326,17 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             watcher._voice_afk = after.afk
             watcher.async_schedule_update_ha_state(False)
 
+    @bot.event
+    async def on_raw_reaction_add(payload: RawReactionActionEvent):
+        channel_id = payload.channel_id
+        channel: TextChannel = await bot.fetch_channel(channel_id)
+        member: Member = payload.member
+        chan = channels.get("{}".format(channel))
+        if chan:
+            chan._state = member.display_name
+            chan._last_user = member.display_name
+            chan.async_schedule_update_ha_state(True)
+
     watchers = {}
     for member in config.get(CONF_MEMBERS):
         if re.match(r"^[0-9]{,20}", member):  # Up to 20 digits because 2^64 (snowflake-length) is 20 digits long
@@ -328,8 +345,18 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 watcher: DiscordAsyncMemberState = \
                     DiscordAsyncMemberState(hass, bot, "{}#{}".format(user.name, user.discriminator), user.id)
                 watchers[watcher.name] = watcher
+
+    channels = {}
+    for channel in config.get(CONF_CHANNELS):
+        if re.match(r"^[0-9]{,20}", channel):  # Up to 20 digits because 2^64 (snowflake-length) is 20 digits long
+            chan: TextChannel = await bot.fetch_channel(channel)
+            if chan:
+                ch: DiscordAsyncReactionState = DiscordAsyncReactionState(hass, bot, chan.name, chan.id)
+                channels[ch.name] = ch
+
     if len(watchers) > 0:
         async_add_entities(watchers.values())
+        async_add_entities(channels.values())
         return True
     else:
         return False
@@ -466,4 +493,38 @@ class DiscordAsyncMemberState(SensorEntity):
             'voice_streaming': self._voice_self_stream,
             'voice_broadcasting_video': self._voice_self_video,
             'voice_afk': self._voice_afk
+        }
+
+
+class DiscordAsyncReactionState(SensorEntity):
+    def __init__(self, hass, client, channel, channelid):
+        self._channel_name = channel
+        self._channel_id = channelid
+        self._hass = hass
+        self._client = client
+        self._state = 'unknown'
+        self._last_user = None
+
+    @property
+    def should_poll(self) -> bool:
+        return False
+
+    @property
+    def state(self) -> str:
+        return self._state
+
+    @property
+    def unique_id(self):
+        """Return a unique ID."""
+        return ENTITY_ID_CHANNEL_FORMAT.format(self._channel_id)
+
+    @property
+    def name(self):
+        return self._channel_name
+
+    @property
+    def device_state_attributes(self):
+        """Return the state attributes."""
+        return {
+            'last_user': self._last_user
         }
