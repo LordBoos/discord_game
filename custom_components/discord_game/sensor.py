@@ -290,7 +290,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             if members.get(name) is not None:
                 await update_discord_entity(_watcher, members.get(name))
         for name, chan in channels.items():
-            chan.async_schedule_update_ha_state(True)
+            chan.async_schedule_update_ha_state(False)
 
     # noinspection PyUnusedLocal
     @bot.event
@@ -340,7 +340,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         if chan:
             chan._state = member.display_name
             chan._last_user = member.display_name
-            chan.async_schedule_update_ha_state(True)
+            chan.async_schedule_update_ha_state(False)
 
     watchers = {}
     for member in config.get(CONF_MEMBERS):
