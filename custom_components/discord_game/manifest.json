@@ -1,9 +1,9 @@
 {
   "domain": "discord_game",
   "name": "Discord Game",
-  "version": "4.1.0",
+  "version": "4.2.0",
   "documentation": "",
   "dependencies": [],
   "codeowners": [],
-  "requirements": ["discord.py==1.5.1"]
+  "requirements": ["discord.py==1.5.1", "addict", "aiohttp", "calendar", "time"]
 }

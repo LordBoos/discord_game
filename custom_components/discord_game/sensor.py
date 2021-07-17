@@ -1,11 +1,15 @@
+import calendar
 import logging
 import re
+import time
 from typing import Union
 
+import aiohttp
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-import aiohttp
+from addict import Dict
 from discord import ActivityType, Spotify, Game, Streaming, CustomActivity, Activity, Member, User, VoiceState
+from discord.ext import tasks
 from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
 from homeassistant.const import (EVENT_HOMEASSISTANT_STOP, EVENT_HOMEASSISTANT_START)
 
@@ -20,6 +24,9 @@ CONF_IMAGE_FORMAT = 'image_format'
 DOMAIN = 'sensor'
 
 ENTITY_ID_FORMAT = "sensor.discord_user_{}"
+
+app_list = []
+steam_app_list = []
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_TOKEN): cv.string,
@@ -48,9 +55,37 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     # noinspection PyUnusedLocal
     async def start_server(event):
         hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, async_stop_server)
+        await load_application_list_cache()
         await bot.start(token)
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_START, start_server)
+
+    @tasks.loop(hours=1)
+    async def refresh_application_lists():
+        await load_application_list_cache()
+
+    refresh_application_lists.start()
+
+    async def load_application_list_cache():
+        await load_discord_application_list()
+        await load_steam_application_list()
+
+    async def load_discord_application_list():
+        async with aiohttp.ClientSession() as session:
+            _LOGGER.debug("Loading Discord detectable applications")
+            async with session.get("https://discord.com/api/v9/applications/detectable") as response:
+                global app_list
+                app_list = await response.json()
+            _LOGGER.debug("Loading Discord detectable applications finished")
+
+    async def load_steam_application_list():
+        async with aiohttp.ClientSession() as steam_session:
+            _LOGGER.debug("Loading Steam detectable applications")
+            async with steam_session.get("https://api.steampowered.com/ISteamApps/GetAppList/v2/") as steam_response:
+                steam_app_list_response = Dict(await steam_response.json())
+                global steam_app_list
+                steam_app_list = steam_app_list_response['applist']['apps']
+                _LOGGER.debug("Loading Steam detectable applications finished")
 
     # noinspection PyUnusedLocal
     @bot.event
@@ -69,6 +104,15 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         watcher._game_image_large = None
         watcher._game_image_small_text = None
         watcher._game_image_large_text = None
+        watcher._game_image_capsule_231x87 = None
+        watcher._game_image_capsule_467x181 = None
+        watcher._game_image_capsule_616x353 = None
+        watcher._game_image_header = None
+        watcher._game_image_hero_capsule = None
+        watcher._game_image_library_600x900 = None
+        watcher._game_image_library_hero = None
+        watcher._game_image_logo = None
+        watcher._game_image_page_bg_raw = None
         watcher._streaming = None
         watcher._streaming_details = None
         watcher._streaming_url = None
@@ -167,6 +211,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         watcher.async_schedule_update_ha_state(False)
 
     async def load_game_image(activity: Union[Activity, Game]):
+        # try:
         if hasattr(activity, 'large_image_url'):
             watcher._game_image_small = activity.small_image_url
             watcher._game_image_large = activity.large_image_url
@@ -174,21 +219,64 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             watcher._game_image_large_text = activity.large_image_text
         if hasattr(activity, 'application_id'):
             app_id = activity.application_id
-            async with aiohttp.ClientSession() as session:
-                async with session.get("https://discord.com/api/v9/applications/detectable") as response:
-                    app_list = await response.json()
-            for app in app_list:
-                if str(app_id) == app["id"]:
-                    _LOGGER.debug("FOUND app = %s", app)
-                    if app['icon']:
-                        watcher._game_image_small = f"https://cdn.discordapp.com/app-icons/{app_id}/{app['icon']}.png"
-                    break
-                if str(activity.name) == app["name"]:
-                    _LOGGER.debug("FOUND app = %s", app)
-                    app_id = app["id"]
-                    if app['icon']:
-                        watcher._game_image_small = f"https://cdn.discordapp.com/app-icons/{app_id}/{app['icon']}.png"
-                    break
+            discord_app = list(filter(lambda app: app['id'] == str(app_id), app_list))
+            if discord_app:
+                _LOGGER.debug("FOUND discord app by application_id = %s", discord_app)
+                watcher._game_image_small = f"https://cdn.discordapp.com/app-icons/{discord_app[0]['id']}/{discord_app[0]['icon']}.png"
+        discord_app_by_name = list(filter(lambda app: app['name'] == str(activity.name), app_list))
+        if discord_app_by_name:
+            _LOGGER.debug("FOUND discord app by name = %s", discord_app_by_name)
+            watcher._game_image_small = \
+                f"https://cdn.discordapp.com/app-icons/{discord_app_by_name[0]['id']}/{discord_app_by_name[0]['icon']}.png"
+        steam_app_by_name = list(filter(lambda steam_app: steam_app['name'] == str(activity.name), steam_app_list))
+        if steam_app_by_name:
+            steam_app_id = steam_app_by_name[0]["appid"]
+            _LOGGER.debug("FOUND Steam app by name = %s", steam_app_by_name[0])
+            timestamp = calendar.timegm(time.gmtime())
+            game_image_capsule_231x87 = \
+                f"https://cdn.cloudflare.steamstatic.com/steam/apps/{steam_app_id}/capsule_231x87.jpg?t={timestamp}"
+            game_image_capsule_467x181 = \
+                f"https://cdn.cloudflare.steamstatic.com/steam/apps/{steam_app_id}/capsule_467x181.jpg?t={timestamp}"
+            game_image_capsule_616x353 = \
+                f"https://cdn.cloudflare.steamstatic.com/steam/apps/{steam_app_id}/capsule_616x353.jpg?t={timestamp}"
+            game_image_header = \
+                f"https://cdn.cloudflare.steamstatic.com/steam/apps/{steam_app_id}/header.jpg?t={timestamp}"
+            game_image_hero_capsule = \
+                f"https://cdn.cloudflare.steamstatic.com/steam/apps/{steam_app_id}/hero_capsule.jpg?t={timestamp}"
+            game_image_library_600x900 = \
+                f"https://cdn.cloudflare.steamstatic.com/steam/apps/{steam_app_id}/library_600x900.jpg?t={timestamp}"
+            game_image_library_hero = \
+                f"https://cdn.cloudflare.steamstatic.com/steam/apps/{steam_app_id}/library_hero.jpg?t={timestamp}"
+            game_image_logo = \
+                f"https://cdn.cloudflare.steamstatic.com/steam/apps/{steam_app_id}/logo.jpg?t={timestamp}"
+            game_image_page_bg_raw = \
+                f"https://cdn.cloudflare.steamstatic.com/steam/apps/{steam_app_id}/page_bg_raw.jpg?t={timestamp}"
+
+            if await check_resource_exists(game_image_capsule_231x87):
+                watcher._game_image_capsule_231x87 = game_image_capsule_231x87
+            if await check_resource_exists(game_image_capsule_467x181):
+                watcher._game_image_capsule_467x181 = game_image_capsule_467x181
+            if await check_resource_exists(game_image_capsule_616x353):
+                watcher._game_image_capsule_616x353 = game_image_capsule_616x353
+            if await check_resource_exists(game_image_header):
+                watcher._game_image_header = game_image_header
+            if await check_resource_exists(game_image_hero_capsule):
+                watcher._game_image_hero_capsule = game_image_hero_capsule
+            if await check_resource_exists(game_image_library_600x900):
+                watcher._game_image_library_600x900 = game_image_library_600x900
+            if await check_resource_exists(game_image_library_hero):
+                watcher._game_image_library_hero = game_image_library_hero
+            if await check_resource_exists(game_image_logo):
+                watcher._game_image_logo = game_image_logo
+            if await check_resource_exists(game_image_page_bg_raw):
+                watcher._game_image_page_bg_raw = game_image_page_bg_raw
+
+    async def check_resource_exists(url):
+        async with aiohttp.ClientSession() as session:
+            _LOGGER.debug("Checking if web resource [%s] exists", url)
+            async with session.head(url) as response:
+                _LOGGER.debug("Resource [%s] response status = %s", url, response.status)
+                return response.status == 200
 
     @bot.event
     async def on_ready():
@@ -265,6 +353,15 @@ class DiscordAsyncMemberState(SensorEntity):
         self._game_image_large = None
         self._game_image_small_text = None
         self._game_image_large_text = None
+        self._game_image_capsule_231x87 = None
+        self._game_image_capsule_467x181 = None
+        self._game_image_capsule_616x353 = None
+        self._game_image_header = None
+        self._game_image_hero_capsule = None
+        self._game_image_library_600x900 = None
+        self._game_image_library_hero = None
+        self._game_image_logo = None
+        self._game_image_page_bg_raw = None
         self._streaming = None
         self._streaming_url = None
         self._streaming_details = None
@@ -332,6 +429,15 @@ class DiscordAsyncMemberState(SensorEntity):
             'game_image_large': self._game_image_large,
             'game_image_small_text': self._game_image_small_text,
             'game_image_large_text': self._game_image_large_text,
+            'game_image_capsule_231x87': self._game_image_capsule_231x87,
+            'game_image_capsule_467x181': self._game_image_capsule_467x181,
+            'game_image_capsule_616x353': self._game_image_capsule_616x353,
+            'game_image_header': self._game_image_header,
+            'game_image_hero_capsule': self._game_image_hero_capsule,
+            'game_image_library_600x900': self._game_image_library_600x900,
+            'game_image_library_hero': self._game_image_library_hero,
+            'game_image_logo': self._game_image_logo,
+            'game_image_page_bg_raw': self._game_image_page_bg_raw,
             'streaming': self._streaming,
             'streaming_url': self._streaming_url,
             'streaming_details': self._streaming_details,
