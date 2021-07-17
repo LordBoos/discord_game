@@ -5,5 +5,5 @@
   "documentation": "",
   "dependencies": [],
   "codeowners": [],
-  "requirements": ["nextcord==2.0.0a8", "addict", "aiohttp"]
+  "requirements": ["nextcord==2.0.0a8", "addict", "aiohttp", "calendar", "time"]
 }
