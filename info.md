@@ -41,6 +41,7 @@ To invite your bot to your server, use following steps:
 2. Under Client ID, click Copy
 3. Go to following URL (replace [CLIENT_ID] with id from previous step) https://discordapp.com/api/oauth2/authorize?client_id=[CLIENT_ID]&scope=bot&permissions=0
 4. Select server to which you want to invite the bot and press Authorize
+
 If this doesn't work for you, you can try to use this guide to invite your bot (select no permissions): https://discordpy.readthedocs.io/en/stable/discord.html#inviting-your-bot
 
 From now on, you can get status of every user on the same server the bot is in.
