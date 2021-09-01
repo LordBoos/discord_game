@@ -35,12 +35,13 @@ To create a bot user and get a token:
 11. Under Token, click on Copy
 12. Now paste your token to the yaml configuration of HA replacing `secretDiscordBotToken` in the example above
 
-You also need your own discord server (or some server where you have admin rights), and you need to invite the bot to that server.
-To do that follow bellow steps:
+You also need your own discord server (or some server where you have "manage server" permission), and you need to invite the bot to that server.
+To invite your bot to your server, use following steps:
 1. Go to General information tab on your Discord bot developer page
 2. Under Client ID, click Copy
 3. Go to following URL (replace [CLIENT_ID] with id from previous step) https://discordapp.com/api/oauth2/authorize?client_id=[CLIENT_ID]&scope=bot&permissions=0
 4. Select server to which you want to invite the bot and press Authorize
+If this doesn't work for you, you can try to use this guide to invite your bot (select no permissions): https://discordpy.readthedocs.io/en/stable/discord.html#inviting-your-bot
 
 From now on, you can get status of every user on the same server the bot is in.
 For every user you want the sensor for his user ID in the members section of yaml configuration.
