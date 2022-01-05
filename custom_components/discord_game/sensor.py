@@ -390,6 +390,7 @@ class DiscordAsyncMemberState(SensorEntity):
         self._voice_self_stream = None
         self._voice_self_video = None
         self._voice_afk = None
+        self.entity_id = ENTITY_ID_FORMAT.format(self._userid)
 
     @property
     def should_poll(self) -> bool:
@@ -413,7 +414,7 @@ class DiscordAsyncMemberState(SensorEntity):
         return self._avatar_url
 
     @property
-    def device_state_attributes(self):
+    def extra_state_attributes(self):
         """Return the state attributes."""
         return {
             'avatar_url': self._avatar_url,
