@@ -1,0 +1,9 @@
+{
+    "name": "Discord Game",
+    "content_in_root": false,
+    "domains": [
+      "sensor"
+    ],
+    "iot_class": "cloud_poll",
+    "homeassistant": "2022.03.0b0"
+  }
