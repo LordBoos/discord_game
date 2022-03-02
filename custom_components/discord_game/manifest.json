@@ -5,5 +5,5 @@
   "documentation": "",
   "dependencies": [],
   "codeowners": [],
-  "requirements": ["discord.py==1.5.1", "addict", "aiohttp"]
+  "requirements": ["nextcord==2.0.0a8", "addict", "aiohttp"]
 }
