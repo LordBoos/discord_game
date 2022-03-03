@@ -8,14 +8,14 @@ import aiohttp
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from addict import Dict
-from discord import ActivityType, Spotify, Game, Streaming, CustomActivity, Activity, Member, User, VoiceState
-from discord.ext import tasks
+from nextcord import ActivityType, Spotify, Game, Streaming, CustomActivity, Activity, Member, User, VoiceState
+from nextcord.ext import tasks
 from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
 from homeassistant.const import (EVENT_HOMEASSISTANT_STOP, EVENT_HOMEASSISTANT_START)
 
 _LOGGER = logging.getLogger(__name__)
 
-REQUIREMENTS = ['discord.py==1.5.1']
+REQUIREMENTS = ['nextcord==2.0.0a8']
 
 CONF_TOKEN = 'token'
 CONF_MEMBERS = 'members'
@@ -37,15 +37,15 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 # noinspection PyUnusedLocal
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    import discord
+    import nextcord
     token = config.get(CONF_TOKEN)
     image_format = config.get(CONF_IMAGE_FORMAT)
 
-    intents = discord.Intents.default()
+    intents = nextcord.Intents.default()
     intents.members = True
     intents.presences = True
 
-    bot = discord.Client(loop=hass.loop, intents=intents)
+    bot = nextcord.Client(loop=hass.loop, intents=intents)
     await bot.login(token)
 
     # noinspection PyUnusedLocal
@@ -204,7 +204,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         watcher.async_schedule_update_ha_state(False)
 
     async def update_discord_entity_user(watcher: DiscordAsyncMemberState, discord_user: User):
-        watcher._avatar_url = discord_user.avatar_url_as(format=None, static_format=image_format, size=1024).__str__()
+        watcher._avatar_url = discord_user.display_avatar.with_size(1024).with_static_format(image_format).__str__()
         watcher._userid = discord_user.id
         watcher._member = discord_user.name + '#' + discord_user.discriminator
         watcher._user_name = discord_user.name
