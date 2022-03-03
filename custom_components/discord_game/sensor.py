@@ -288,6 +288,14 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             if members.get(name) is not None:
                 await update_discord_entity(watcher, members.get(name))
 
+    
+    # noinspection PyUnusedLocal
+    @bot.event
+    async def on_presence_update(before: Member, after: Member):
+        watcher = watchers.get("{}".format(after))
+        if watcher is not None:
+            await update_discord_entity(watcher, after)
+
     # noinspection PyUnusedLocal
     @bot.event
     async def on_member_update(before: Member, after: Member):
