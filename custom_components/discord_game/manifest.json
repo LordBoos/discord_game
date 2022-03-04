@@ -1,9 +1,9 @@
 {
   "domain": "discord_game",
   "name": "Discord Game",
-  "version": "5.0.0a",
+  "version": "5.0.1",
   "documentation": "",
   "dependencies": [],
   "codeowners": [],
-  "requirements": ["nextcord==2.0.0a8", "addict", "aiohttp", "calendar", "time"]
+  "requirements": ["nextcord==2.0.0a8", "addict", "aiohttp"]
 }
