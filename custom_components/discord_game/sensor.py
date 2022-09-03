@@ -19,11 +19,13 @@ REQUIREMENTS = ['nextcord==2.0.0a8']
 
 CONF_TOKEN = 'token'
 CONF_MEMBERS = 'members'
+CONF_CHANNELS = 'channels'
 CONF_IMAGE_FORMAT = 'image_format'
 
 DOMAIN = 'sensor'
 
 ENTITY_ID_FORMAT = "sensor.discord_user_{}"
+ENTITY_ID_CHANNEL_FORMAT = "sensor.discord_channel_{}"
 
 app_list = []
 steam_app_list = []
@@ -31,6 +33,7 @@ steam_app_list = []
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_TOKEN): cv.string,
     vol.Required(CONF_MEMBERS, default=[]): vol.All(cv.ensure_list, [cv.string]),
+    vol.Required(CONF_CHANNELS, default=[]): vol.All(cv.ensure_list, [cv.string]),
     vol.Optional(CONF_IMAGE_FORMAT, default='webp'): vol.In(['png', 'webp', 'jpeg', 'jpg']),
 })
 
@@ -41,16 +44,14 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     token = config.get(CONF_TOKEN)
     image_format = config.get(CONF_IMAGE_FORMAT)
 
-    intents = nextcord.Intents.default()
-    intents.members = True
-    intents.presences = True
+    intents = nextcord.Intents.all()
 
     bot = nextcord.Client(loop=hass.loop, intents=intents)
     await bot.login(token)
 
     # noinspection PyUnusedLocal
     async def async_stop_server(event):
-        await bot.logout()
+        await bot.close()
 
     # noinspection PyUnusedLocal
     async def start_server(event):
@@ -92,125 +93,125 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     async def on_error(error, *args, **kwargs):
         raise
 
-    async def update_discord_entity(watcher: DiscordAsyncMemberState, discord_member: Member):
-        watcher._state = discord_member.status
-        watcher._roles = [role.name for role in discord_member.roles]
-        watcher._display_name = discord_member.display_name
-        watcher._activity_state = None
-        watcher._game = None
-        watcher._game_state = None
-        watcher._game_details = None
-        watcher._game_image_small = None
-        watcher._game_image_large = None
-        watcher._game_image_small_text = None
-        watcher._game_image_large_text = None
-        watcher._game_image_capsule_231x87 = None
-        watcher._game_image_capsule_467x181 = None
-        watcher._game_image_capsule_616x353 = None
-        watcher._game_image_header = None
-        watcher._game_image_hero_capsule = None
-        watcher._game_image_library_600x900 = None
-        watcher._game_image_library_hero = None
-        watcher._game_image_logo = None
-        watcher._game_image_page_bg_raw = None
-        watcher._streaming = None
-        watcher._streaming_details = None
-        watcher._streaming_url = None
-        watcher._listening = None
-        watcher._listening_details = None
-        watcher._listening_url = None
-        watcher._spotify_artists = None
-        watcher._spotify_title = None
-        watcher._spotify_album = None
-        watcher._spotify_album_cover_url = None
-        watcher._spotify_track_id = None
-        watcher._spotify_duration = None
-        watcher._spotify_start = None
-        watcher._spotify_end = None
-        watcher._watching = None
-        watcher._watching_details = None
-        watcher._watching_url = None
-        watcher._custom_status = None
-        watcher._custom_emoji = None
-        watcher._voice_deaf = None
-        watcher._voice_mute = None
-        watcher._voice_self_deaf = None
-        watcher._voice_self_mute = None
-        watcher._voice_self_stream = None
-        watcher._voice_self_video = None
-        watcher._voice_afk = None
-        watcher._voice_channel = None
+    async def update_discord_entity(_watcher: DiscordAsyncMemberState, discord_member: Member):
+        _watcher._state = discord_member.status
+        _watcher._roles = [role.name for role in discord_member.roles]
+        _watcher._display_name = discord_member.display_name
+        _watcher._activity_state = None
+        _watcher._game = None
+        _watcher._game_state = None
+        _watcher._game_details = None
+        _watcher._game_image_small = None
+        _watcher._game_image_large = None
+        _watcher._game_image_small_text = None
+        _watcher._game_image_large_text = None
+        _watcher._game_image_capsule_231x87 = None
+        _watcher._game_image_capsule_467x181 = None
+        _watcher._game_image_capsule_616x353 = None
+        _watcher._game_image_header = None
+        _watcher._game_image_hero_capsule = None
+        _watcher._game_image_library_600x900 = None
+        _watcher._game_image_library_hero = None
+        _watcher._game_image_logo = None
+        _watcher._game_image_page_bg_raw = None
+        _watcher._streaming = None
+        _watcher._streaming_details = None
+        _watcher._streaming_url = None
+        _watcher._listening = None
+        _watcher._listening_details = None
+        _watcher._listening_url = None
+        _watcher._spotify_artists = None
+        _watcher._spotify_title = None
+        _watcher._spotify_album = None
+        _watcher._spotify_album_cover_url = None
+        _watcher._spotify_track_id = None
+        _watcher._spotify_duration = None
+        _watcher._spotify_start = None
+        _watcher._spotify_end = None
+        _watcher._watching = None
+        _watcher._watching_details = None
+        _watcher._watching_url = None
+        _watcher._custom_status = None
+        _watcher._custom_emoji = None
+        _watcher._voice_deaf = None
+        _watcher._voice_mute = None
+        _watcher._voice_self_deaf = None
+        _watcher._voice_self_mute = None
+        _watcher._voice_self_stream = None
+        _watcher._voice_self_video = None
+        _watcher._voice_afk = None
+        _watcher._voice_channel = None
         if discord_member.voice is not None:
             if discord_member.voice.channel is not None:
-                watcher._voice_channel = discord_member.voice.channel.name
+                _watcher._voice_channel = discord_member.voice.channel.name
             else:
-                watcher._voice_channel = None
-            watcher._voice_deaf = discord_member.voice.deaf
-            watcher._voice_mute = discord_member.voice.mute
-            watcher._voice_self_deaf = discord_member.voice.self_deaf
-            watcher._voice_self_mute = discord_member.voice.self_mute
-            watcher._voice_self_stream = discord_member.voice.self_stream
-            watcher._voice_self_video = discord_member.voice.self_video
-            watcher._voice_afk = discord_member.voice.afk
+                _watcher._voice_channel = None
+            _watcher._voice_deaf = discord_member.voice.deaf
+            _watcher._voice_mute = discord_member.voice.mute
+            _watcher._voice_self_deaf = discord_member.voice.self_deaf
+            _watcher._voice_self_mute = discord_member.voice.self_mute
+            _watcher._voice_self_stream = discord_member.voice.self_stream
+            _watcher._voice_self_video = discord_member.voice.self_video
+            _watcher._voice_afk = discord_member.voice.afk
 
         for activity in discord_member.activities:
             if activity.type == ActivityType.playing:
                 await load_game_image(activity)
-                watcher._game = activity.name
+                _watcher._game = activity.name
                 if hasattr(activity, 'state'):
-                    watcher._game_state = activity.state
+                    _watcher._game_state = activity.state
                 if hasattr(activity, 'details'):
-                    watcher._game_details = activity.details
+                    _watcher._game_details = activity.details
                 continue
             if activity.type == ActivityType.streaming:
                 activity: Streaming
-                watcher._streaming = activity.name
-                watcher._streaming_details = activity.details
-                watcher._streaming_url = activity.url
+                _watcher._streaming = activity.name
+                _watcher._streaming_details = activity.details
+                _watcher._streaming_url = activity.url
                 continue
             if activity.type == ActivityType.listening:
                 if isinstance(activity, Spotify):
                     activity: Spotify
-                    watcher._listening = activity.title
-                    watcher._spotify_artists = ", ".join(activity.artists)
-                    watcher._spotify_title = activity.title
-                    watcher._spotify_album = activity.album
-                    watcher._spotify_album_cover_url = activity.album_cover_url
-                    watcher._spotify_track_id = activity.track_id
-                    watcher._spotify_duration = str(activity.duration)
-                    watcher._spotify_start = str(activity.start)
-                    watcher._spotify_end = str(activity.end)
+                    _watcher._listening = activity.title
+                    _watcher._spotify_artists = ", ".join(activity.artists)
+                    _watcher._spotify_title = activity.title
+                    _watcher._spotify_album = activity.album
+                    _watcher._spotify_album_cover_url = activity.album_cover_url
+                    _watcher._spotify_track_id = activity.track_id
+                    _watcher._spotify_duration = str(activity.duration)
+                    _watcher._spotify_start = str(activity.start)
+                    _watcher._spotify_end = str(activity.end)
                     continue
                 else:
                     activity: Activity
-                    watcher._activity_state = activity.state
-                    watcher._listening = activity.name
-                    watcher._listening_details = activity.details
-                    watcher._listening_url = activity.url
+                    _watcher._activity_state = activity.state
+                    _watcher._listening = activity.name
+                    _watcher._listening_details = activity.details
+                    _watcher._listening_url = activity.url
                     continue
             if activity.type == ActivityType.watching:
                 activity: Activity
-                watcher._activity_state = activity.state
-                watcher._watching = activity.name
-                watcher._watching_details = activity.details
-                watcher._watching_url = activity.url
+                _watcher._activity_state = activity.state
+                _watcher._watching = activity.name
+                _watcher._watching_details = activity.details
+                _watcher._watching_url = activity.url
                 continue
             if activity.type == ActivityType.custom:
                 activity: CustomActivity
-                watcher._activity_state = activity.state
-                watcher._custom_status = activity.name
-                watcher._custom_emoji = activity.emoji.name if activity.emoji else None
+                _watcher._activity_state = activity.state
+                _watcher._custom_status = activity.name
+                _watcher._custom_emoji = activity.emoji.name if activity.emoji else None
 
-        watcher.async_schedule_update_ha_state(False)
+        _watcher.async_schedule_update_ha_state(False)
 
-    async def update_discord_entity_user(watcher: DiscordAsyncMemberState, discord_user: User):
-        watcher._avatar_url = discord_user.display_avatar.with_size(1024).with_static_format(image_format).__str__()
-        watcher._userid = discord_user.id
-        watcher._member = discord_user.name + '#' + discord_user.discriminator
-        watcher._user_name = discord_user.name
-        watcher.async_schedule_update_ha_state(False)
+    async def update_discord_entity_user(_watcher: DiscordAsyncMemberState, discord_user: User):
+        _watcher._avatar_url = discord_user.display_avatar.with_size(1024).with_static_format(image_format).__str__()
+        _watcher._userid = discord_user.id
+        _watcher._member = discord_user.name + '#' + discord_user.discriminator
+        _watcher._user_name = discord_user.name
+        _watcher.async_schedule_update_ha_state(False)
 
-    async def load_game_image(activity: Union[Activity, Game]):
+    async def load_game_image(activity: Union[Activity, Game, Streaming]):
         # try:
         if hasattr(activity, 'large_image_url'):
             watcher._game_image_small = activity.small_image_url
@@ -280,56 +281,56 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     @bot.event
     async def on_ready():
-        users = {"{}".format(user): user for user in bot.users}
-        members = {"{}".format(member): member for member in list(bot.get_all_members())}
-        for name, watcher in watchers.items():
+        users = {"{}".format(_user): _user for _user in bot.users}
+        members = {"{}".format(_member): _member for _member in list(bot.get_all_members())}
+        for name, _watcher in watchers.items():
             if users.get(name) is not None:
-                await update_discord_entity_user(watcher, users.get(name))
+                await update_discord_entity_user(_watcher, users.get(name))
             if members.get(name) is not None:
-                await update_discord_entity(watcher, members.get(name))
+                await update_discord_entity(_watcher, members.get(name))
 
     # noinspection PyUnusedLocal
     @bot.event
     async def on_member_update(before: Member, after: Member):
-        watcher = watchers.get("{}".format(after))
-        if watcher is not None:
-            await update_discord_entity(watcher, after)
+        _watcher = watchers.get("{}".format(after))
+        if _watcher is not None:
+            await update_discord_entity(_watcher, after)
 
     # noinspection PyUnusedLocal
     @bot.event
     async def on_presence_update(before: Member, after: Member):
-        watcher = watchers.get("{}".format(after))
-        if watcher is not None:
-            await update_discord_entity(watcher, after)
+        _watcher = watchers.get("{}".format(after))
+        if _watcher is not None:
+            await update_discord_entity(_watcher, after)
 
     # noinspection PyUnusedLocal
     @bot.event
     async def on_user_update(before: User, after: User):
-        watcher: DiscordAsyncMemberState = watchers.get("{}".format(after))
-        if watcher is not None:
-            await update_discord_entity_user(watcher, after)
+        _watcher: DiscordAsyncMemberState = watchers.get("{}".format(after))
+        if _watcher is not None:
+            await update_discord_entity_user(_watcher, after)
 
     # noinspection PyUnusedLocal
     @bot.event
-    async def on_voice_state_update(member: Member, before: VoiceState, after: VoiceState):
-        watcher = watchers.get("{}".format(member))
-        if watcher is not None:
+    async def on_voice_state_update(_member: Member, before: VoiceState, after: VoiceState):
+        _watcher = watchers.get("{}".format(_member))
+        if _watcher is not None:
             if after.channel is not None:
-                watcher._voice_channel = after.channel.name
+                _watcher._voice_channel = after.channel.name
             else:
-                watcher._voice_channel = None
-            watcher._voice_deaf = after.deaf
-            watcher._voice_mute = after.mute
-            watcher._voice_self_deaf = after.self_deaf
-            watcher._voice_self_mute = after.self_mute
-            watcher._voice_self_stream = after.self_stream
-            watcher._voice_self_video = after.self_video
-            watcher._voice_afk = after.afk
-            watcher.async_schedule_update_ha_state(False)
+                _watcher._voice_channel = None
+            _watcher._voice_deaf = after.deaf
+            _watcher._voice_mute = after.mute
+            _watcher._voice_self_deaf = after.self_deaf
+            _watcher._voice_self_mute = after.self_mute
+            _watcher._voice_self_stream = after.self_stream
+            _watcher._voice_self_video = after.self_video
+            _watcher._voice_afk = after.afk
+            _watcher.async_schedule_update_ha_state(False)
 
     watchers = {}
     for member in config.get(CONF_MEMBERS):
-        if re.match(r"^[0-9]{,20}", member):  # Up to 20 digits because 2^64 (snowflake-length) is 20 digits long
+        if re.match(r"^\d{,20}", member):  # Up to 20 digits because 2^64 (snowflake-length) is 20 digits long
             user = await bot.fetch_user(member)
             if user:
                 watcher: DiscordAsyncMemberState = \
@@ -404,7 +405,7 @@ class DiscordAsyncMemberState(SensorEntity):
         return False
 
     @property
-    def state(self) -> str:
+    def native_value(self) -> str:
         return self._state
 
     @property
