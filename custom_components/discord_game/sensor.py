@@ -8,8 +8,8 @@ import aiohttp
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from addict import Dict
-from nextcord import ActivityType, Spotify, Game, Streaming, CustomActivity, Activity, Member, User, VoiceState, TextChannel, \
-    RawReactionActionEvent
+from nextcord import ActivityType, Spotify, Game, Streaming, CustomActivity, Activity, Member, User, VoiceState, RawReactionActionEvent
+from nextcord.abc import GuildChannel
 from nextcord.ext import tasks
 from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
 from homeassistant.const import (EVENT_HOMEASSISTANT_STOP, EVENT_HOMEASSISTANT_START)
@@ -289,8 +289,8 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 await update_discord_entity_user(_watcher, users.get(name))
             if members.get(name) is not None:
                 await update_discord_entity(_watcher, members.get(name))
-        for name, chan in channels.items():
-            chan.async_schedule_update_ha_state(False)
+        for name, _chan in channels.items():
+            _chan.async_schedule_update_ha_state(False)
 
     # noinspection PyUnusedLocal
     @bot.event
@@ -334,13 +334,13 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     @bot.event
     async def on_raw_reaction_add(payload: RawReactionActionEvent):
         channel_id = payload.channel_id
-        channel: TextChannel = await bot.fetch_channel(channel_id)
-        member: Member = payload.member
-        chan = channels.get("{}".format(channel))
-        if chan:
-            chan._state = member.display_name
-            chan._last_user = member.display_name
-            chan.async_schedule_update_ha_state(False)
+        _channel: GuildChannel = await bot.fetch_channel(channel_id)
+        _member: Member = payload.member
+        _chan = channels.get("{}".format(_channel))
+        if _chan:
+            _chan._state = _member.display_name
+            _chan._last_user = _member.display_name
+            _chan.async_schedule_update_ha_state(False)
 
     watchers = {}
     for member in config.get(CONF_MEMBERS):
@@ -353,8 +353,8 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     channels = {}
     for channel in config.get(CONF_CHANNELS):
-        if re.match(r"^[0-9]{,20}", channel):  # Up to 20 digits because 2^64 (snowflake-length) is 20 digits long
-            chan: TextChannel = await bot.fetch_channel(channel)
+        if re.match(r"^\d{,20}", channel):  # Up to 20 digits because 2^64 (snowflake-length) is 20 digits long
+            chan: GuildChannel = await bot.fetch_channel(channel)
             if chan:
                 ch: DiscordAsyncReactionState = DiscordAsyncReactionState(hass, bot, chan.name, chan.id)
                 channels[ch.name] = ch
@@ -516,7 +516,7 @@ class DiscordAsyncReactionState(SensorEntity):
         return False
 
     @property
-    def state(self) -> str:
+    def native_value(self) -> str:
         return self._state
 
     @property
