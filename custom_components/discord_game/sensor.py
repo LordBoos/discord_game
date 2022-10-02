@@ -376,7 +376,7 @@ class DiscordAsyncMemberState(SensorEntity):
         self._listening = None
         self._listening_url = None
         self._listening_details = None
-        self._spotify_artist = None
+        self._spotify_artists = None
         self._spotify_title = None
         self._spotify_album = None
         self._spotify_album_cover_url = None
@@ -453,7 +453,7 @@ class DiscordAsyncMemberState(SensorEntity):
             'listening': self._listening,
             'listening_url': self._listening_url,
             'listening_details': self._listening_details,
-            'spotify_artist': self._spotify_artist,
+            'spotify_artist': self._spotify_artists,
             'spotify_title': self._spotify_title,
             'spotify_album': self._spotify_album,
             'spotify_album_cover_url': self._spotify_album_cover_url,
