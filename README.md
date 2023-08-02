@@ -28,9 +28,7 @@ To create a bot user and get a token:
 4. Click on Bot in the left panel and then Add Bot and Yes, do it!
 5. A green message "A wild bot has appeared!" should appear on the page
 6. Uncheck PUBLIC BOT
-7. From roughly 26.10.2020 you have to also grant your bot Privileged Gateway Intents permissions.
-8. Check Presence Intent
-9. Check Server Members Intent
+8. Enable every Intent in the Privileged Gateway Intents section
 10. Click Save changes on the bottom of the page
 11. Under Token, click on Copy
 12. Now paste your token to the yaml configuration of HA replacing `secretDiscordBotToken` in the example above
