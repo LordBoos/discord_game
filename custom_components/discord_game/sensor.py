@@ -224,12 +224,14 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             discord_app = list(filter(lambda app: app['id'] == str(app_id), app_list))
             if discord_app:
                 _LOGGER.debug("FOUND discord app by application_id = %s", discord_app)
-                watcher._game_image_small = f"https://cdn.discordapp.com/app-icons/{discord_app[0]['id']}/{discord_app[0]['icon']}.png"
+                if hasattr(discord_app[0], 'icon'):
+                    watcher._game_image_small = f"https://cdn.discordapp.com/app-icons/{discord_app[0]['id']}/{discord_app[0]['icon']}.png"
         discord_app_by_name = list(filter(lambda app: app['name'] == str(activity.name), app_list))
         if discord_app_by_name:
             _LOGGER.debug("FOUND discord app by name = %s", discord_app_by_name)
-            watcher._game_image_small = \
-                f"https://cdn.discordapp.com/app-icons/{discord_app_by_name[0]['id']}/{discord_app_by_name[0]['icon']}.png"
+            if hasattr(discord_app_by_name[0], 'icon'):
+                watcher._game_image_small = \
+                    f"https://cdn.discordapp.com/app-icons/{discord_app_by_name[0]['id']}/{discord_app_by_name[0]['icon']}.png"
         steam_app_by_name = list(filter(lambda steam_app: steam_app['name'] == str(activity.name), steam_app_list))
         if steam_app_by_name:
             steam_app_id = steam_app_by_name[0]["appid"]
