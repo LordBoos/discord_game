@@ -1,0 +1,31 @@
+{
+  "config": {
+    "error": {
+      "auth": "Provided Discord Bot access token is not valid."
+    },
+    "step": {
+      "user": {
+        "data": {
+          "access_token": "Discord Bot access token",
+          "image_format": "Image format"
+        },
+        "description": "Enter your Discord bot access token.",
+        "title": "Authentication"
+      },
+      "members": {
+        "data": {
+          "members": "Username of the Discord user"
+        },
+        "description": "Select Discord users to track",
+        "title": "Select Discord users to track"
+      },
+      "channels": {
+        "data": {
+          "members": "Name of the Discord channel"
+        },
+        "description": "Select Discord channels to track",
+        "title": "Select Discord channels to track"
+      }
+    }
+  }
+}
