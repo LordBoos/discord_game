@@ -1,0 +1,27 @@
+{
+  "title": "Discord Game",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Discord Game integration authorization",
+        "data": {
+          "access_token": "Token",
+          "image_format": "Image format"
+        }
+      },
+      "members": {
+        "title": "Set up Discord Game integration",
+        "data": {
+          "members": "Discord users",
+          "channels": "Discord channels"
+        }
+      }
+    },
+    "error": {
+      "auth": "The auth token provided is not valid."
+    },
+    "abort": {
+      "error_connecting": "Failed to connect, check your Token and try again"
+    }
+  }
+}

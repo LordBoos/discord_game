@@ -1,0 +1,25 @@
+{
+  "config": {
+    "error": {
+      "auth": "Provided Discord Bot access token is not valid."
+    },
+    "step": {
+      "user": {
+        "data": {
+          "access_token": "Discord Bot access token",
+          "image_format": "Image format"
+        },
+        "description": "Enter your Discord bot access token.\nHow to obtain the token is described on https://github.com/LordBoos/discord_game",
+        "title": "Authentication"
+      },
+      "members": {
+        "data": {
+          "members": "Username of the Discord user (required)",
+          "channels": "Name of the Discord channel (optional)"
+        },
+        "description": "Select Discord users and channels to track",
+        "title": "Select Discord users and channels to track"
+      }
+    }
+  }
+}
