@@ -8,18 +8,7 @@ same token for both components, and the bot will combine both functions. So 1 Di
 
 ## Configuration:
 
-```yaml
-sensor:
-  - platform: discord_game
-    token: secretDiscordBotToken
-    image_format: webp            # optional, available formats are: png, webp, jpeg, jpg
-    members:
-      - 1234567890
-      - 0987654321
-      - 12345678900987654321
-```
-
-You have to create a Discord bot user and get it's token to be able to use this component.
+First you have to create a Discord bot user and get it's token to be able to use this component.
 
 To create a bot user and get a token:
 1. Go to https://discordapp.com/developers/applications/
@@ -30,8 +19,7 @@ To create a bot user and get a token:
 6. Uncheck PUBLIC BOT
 8. Enable every Intent in the Privileged Gateway Intents section
 10. Click Save changes on the bottom of the page
-11. Under Token, click on Copy
-12. Now paste your token to the yaml configuration of HA replacing `secretDiscordBotToken` in the example above
+11. Under Token, click on Copy, this is your token, that you need to later paste into home assistant configuration flow, keep in mind that the bot first has to be invited to some server
 
 You also need your own discord server (or some server where you have "manage server" permission), and you need to invite the bot to that server.
 To invite your bot to your server, use following steps:
@@ -42,17 +30,13 @@ To invite your bot to your server, use following steps:
 
 If this doesn't work for you, you can try to use this guide to invite your bot (select no permissions): https://discordpy.readthedocs.io/en/stable/discord.html#inviting-your-bot
 
-From now on, you can get status of every user on the same server the bot is in.
-For every user you want the sensor for his user ID in the members section of yaml configuration.
+Now just go to Home Assistant integrations/devices dashboard and add Discord Game integration:
+1. Paste your token
+2. Select image format (only works for user avatars)
+3. On the next step select users that you want to track
+4. If you want to use channel tracking which tracks which user last added a reaction, you can select channels, but this is optional and can be left blank.
+5. Now continue and device for each user will be created with all the tracked sensors
 
-To get user ID you need to perform following steps:
-1. Open Discord
-2. Go to User Settings (Cog icon next to your name in bottom left part of Discord window)
-3. Go to Advanced
-4. Enable Developer Mode
-5. Close settings
-6. Right click on any user on your Server that you want to Add to this integration
-7. Select Copy
 
 If you are using Safari or the iOS Home Assistant app, please set the `image_format` to `png`, because Safari doesn't support the `webp` image format.
 
