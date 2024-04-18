@@ -14,17 +14,11 @@
       },
       "members": {
         "data": {
-          "members": "Username of the Discord user"
+          "members": "Username of the Discord user (required)",
+          "channels": "Name of the Discord channel (optional)"
         },
-        "description": "Select Discord users to track",
-        "title": "Select Discord users to track"
-      },
-      "channels": {
-        "data": {
-          "members": "Name of the Discord channel"
-        },
-        "description": "Select Discord channels to track",
-        "title": "Select Discord channels to track"
+        "description": "Select Discord users and channels to track",
+        "title": "Select Discord users and channels to track"
       }
     }
   }

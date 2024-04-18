@@ -12,12 +12,7 @@
       "members": {
         "title": "Set up Discord Game integration",
         "data": {
-          "members": "Discord users"
-        }
-      },
-      "channels": {
-        "title": "Set up Discord Game integration",
-        "data": {
+          "members": "Discord users",
           "channels": "Discord channels"
         }
       }
