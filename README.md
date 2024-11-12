@@ -1,6 +1,6 @@
 # Discord user game status Custom Component (for Home Assistant)
 
-This component pulls information about user's status, and the game he's currently playing from the Discord.
+This component pulls information about user's status, and the game they're currently playing from the Discord.
 It creates a sensor for every configured user with online status and game played status. Discord avatar is used as entity_picture.
 
 You can use this component in combination with native Home Assistant Discord notify integration. It works well together, and you can use the 
