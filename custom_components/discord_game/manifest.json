@@ -2,7 +2,7 @@
   "domain": "discord_game",
   "name": "Discord Game",
   "codeowners": ["@lordboos"],
-  "version": "6.0.2",
+  "version": "6.0.3",
   "documentation": "https://github.com/LordBoos/discord_game",
   "config_flow": true,
   "iot_class": "cloud_push",
