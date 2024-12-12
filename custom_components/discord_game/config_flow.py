@@ -108,7 +108,7 @@ class DiscordGameConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.debug("userNames: %s", self.user_names)
 
             self.channel_names = list(self.channels.keys())
-            _LOGGER.debug("channelNames: %s", channelNames)
+            _LOGGER.debug("channelNames: %s", self.channel_names)
         except LoginFailure:
             raise ValueError("Invalid access token")
         finally:
