@@ -7,9 +7,10 @@
       "user": {
         "data": {
           "access_token": "Discord Bot access token",
-          "image_format": "Image format"
+          "image_format": "Image format",
+          "steam_api_key": "Steam API Key (optional, needed for image loading)"
         },
-        "description": "Enter your Discord bot access token.\nHow to obtain the token is described on https://github.com/LordBoos/discord_game",
+        "description": "Enter your Discord bot access token.\nHow to obtain the token is described on https://github.com/LordBoos/discord_game\n\nTo enable Steam game images, enter your Steam API key.\nYou can get one at https://steamcommunity.com/dev/apikey",
         "title": "Authentication"
       },
       "members": {
@@ -20,6 +21,30 @@
         "description": "Select Discord users and channels to track",
         "title": "Select Discord users and channels to track"
       }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Discord Game Options",
+        "description": "Update your Discord bot token, image format, or Steam API key.\nYou can get a Steam API key at https://steamcommunity.com/dev/apikey",
+        "data": {
+          "access_token": "Discord Bot access token",
+          "image_format": "Image format",
+          "steam_api_key": "Steam API Key (optional, needed for image loading)"
+        }
+      },
+      "members": {
+        "title": "Select Discord users and channels to track",
+        "description": "Select Discord users and channels to track. Previously selected items are pre-selected.",
+        "data": {
+          "members": "Username of the Discord user (required)",
+          "channels": "Name of the Discord channel (optional)"
+        }
+      }
+    },
+    "error": {
+      "auth": "Provided Discord Bot access token is not valid."
     }
   }
 }

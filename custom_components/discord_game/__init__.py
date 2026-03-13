@@ -14,11 +14,23 @@ async def async_setup_entry(
         hass: core.HomeAssistant, entry: config_entries.ConfigEntry
 ) -> bool:
     """Set up platform from a ConfigEntry."""
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
+    # Merge data and options so sensor.py reads the latest values
+    config = {**entry.data, **entry.options}
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = config
+
+    unsub = entry.add_update_listener(_async_options_updated)
+    hass.data[DOMAIN][f"{entry.entry_id}_unsub_options"] = unsub
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
+
+
+async def _async_options_updated(
+        hass: core.HomeAssistant, entry: config_entries.ConfigEntry
+) -> None:
+    """Reload the integration when options change."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(
@@ -26,10 +38,10 @@ async def async_unload_entry(
 ) -> bool:
     """Unload a config entry."""
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        # Remove config entry from domain.
-        entry_data = hass.data[DOMAIN].pop(entry.entry_id)
-        # Remove options_update_listener.
-        entry_data["unsub_options_update_listener"]()
+        hass.data[DOMAIN].pop(entry.entry_id, None)
+        unsub = hass.data[DOMAIN].pop(f"{entry.entry_id}_unsub_options", None)
+        if unsub:
+            unsub()
 
     return unload_ok
 

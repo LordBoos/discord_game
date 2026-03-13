@@ -34,9 +34,23 @@ If this doesn't work for you, you can try to use this guide to invite your bot (
 Now just go to Home Assistant integrations/devices dashboard and add Discord Game integration:
 1. Paste your token
 2. Select image format (only works for user avatars)
-3. On the next step select users that you want to track
-4. If you want to use channel tracking which tracks which user last added a reaction, you can select channels, but this is optional and can be left blank.
-5. Now continue and device for each user will be created with all the tracked sensors
+3. Optionally enter your Steam API key (see below)
+4. On the next step select users that you want to track
+5. If you want to use channel tracking which tracks which user last added a reaction, you can select channels, but this is optional and can be left blank.
+6. Now continue and device for each user will be created with all the tracked sensors
+
+## Steam API Key (optional)
+
+A Steam API key is needed to load Steam game images (capsules, headers, logos, etc.) for the games your users are playing. Without it, only Discord-provided game images will be available.
+
+To get a Steam API key:
+1. Go to https://steamcommunity.com/dev/apikey
+2. Log in with your Steam account
+3. Enter a domain name (can be anything, e.g. `homeassistant.local`)
+4. Accept the Steam Web API Terms of Use
+5. Copy the key that is displayed
+
+You can enter the key during initial setup, or add/change it later by going to the integration's page in Home Assistant and clicking **Configure**.
 
 
 If you are using Safari or the iOS Home Assistant app, please set the `image_format` to `png`, because Safari doesn't support the `webp` image format.
