@@ -515,7 +515,7 @@ class DiscordAsyncMemberState(SensorEntity):
         return {
             'avatar_url': self.avatar_url,
             'activity_state': self.activity_state,
-            'user_id': self.userid,
+            'user_id': str(self.userid),
             'user_name': self.user_name,
             'display_name': self.display_name,
             'roles': self.roles,
