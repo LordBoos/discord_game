@@ -9,7 +9,7 @@ from homeassistant.const import CONF_ACCESS_TOKEN
 from homeassistant.helpers import selector
 from nextcord import LoginFailure
 
-from .const import DOMAIN, CONF_MEMBERS, CONF_CHANNELS, CONF_IMAGE_FORMAT, CONF_STEAM_API_KEY
+from .const import DOMAIN, CONF_MEMBERS, CONF_CHANNELS, CONF_IMAGE_FORMAT, CONF_STEAM_API_KEY, CONF_ENTITIES_DISABLED_DEFAULT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,6 +24,7 @@ AUTH_SCHEMA = vol.Schema(
         vol.Optional(CONF_STEAM_API_KEY): selector.TextSelector(
             selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD),
         ),
+        vol.Required(CONF_ENTITIES_DISABLED_DEFAULT, default=False): selector.BooleanSelector(),
     }
 )
 
@@ -159,6 +160,7 @@ class DiscordGameOptionsFlow(config_entries.OptionsFlow):
         current_token = self._get_current(CONF_ACCESS_TOKEN)
         current_image_format = self._get_current(CONF_IMAGE_FORMAT, "webp")
         current_steam_key = self._get_current(CONF_STEAM_API_KEY)
+        current_entities_disabled = self._get_current(CONF_ENTITIES_DISABLED_DEFAULT, False)
 
         options_schema = vol.Schema(
             {
@@ -171,6 +173,7 @@ class DiscordGameOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(CONF_STEAM_API_KEY, default=current_steam_key): selector.TextSelector(
                     selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD),
                 ),
+                vol.Required(CONF_ENTITIES_DISABLED_DEFAULT, default=current_entities_disabled): selector.BooleanSelector(),
             }
         )
 

@@ -20,7 +20,7 @@ from nextcord import ActivityType, Spotify, Game, Streaming, CustomActivity, Act
 from nextcord.abc import GuildChannel
 from nextcord.ext import tasks
 
-from .const import DOMAIN, CONF_MEMBERS, CONF_CHANNELS, CONF_IMAGE_FORMAT, CONF_STEAM_API_KEY
+from .const import DOMAIN, CONF_MEMBERS, CONF_CHANNELS, CONF_IMAGE_FORMAT, CONF_STEAM_API_KEY, CONF_ENTITIES_DISABLED_DEFAULT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -66,6 +66,7 @@ async def async_setup_entry(
     token = config.get(CONF_ACCESS_TOKEN)
     image_format = config.get(CONF_IMAGE_FORMAT)
     steam_api_key = config.get(CONF_STEAM_API_KEY)
+    entities_disabled_default = config.get(CONF_ENTITIES_DISABLED_DEFAULT, False)
 
     bot = nextcord.Client(loop=hass.loop, intents=nextcord.Intents.all())
     await bot.login(token)
@@ -401,7 +402,7 @@ async def async_setup_entry(
             user = await bot.fetch_user(member)
             if user:
                 watcher: DiscordAsyncMemberState = \
-                    DiscordAsyncMemberState(hass, bot, user.name, user.global_name, user.id)
+                    DiscordAsyncMemberState(hass, bot, user.name, user.global_name, user.id, entities_disabled_default)
                 watchers[str(user.id)] = watcher
 
     channels = {}
@@ -443,7 +444,7 @@ async def async_setup_entry(
 
 
 class DiscordAsyncMemberState(SensorEntity):
-    def __init__(self, hass, client, member, user_name, userid):
+    def __init__(self, hass, client, member, user_name, userid, entities_disabled_default=False):
         self.member = member
         self.userid = userid
         self.hass = hass
@@ -500,7 +501,7 @@ class DiscordAsyncMemberState(SensorEntity):
         self.entity_id = ENTITY_ID_FORMAT.format(self.userid)
         sensors_dict = {}
         for sensor_name in SENSORS:
-            sensors_dict[sensor_name] = GenericSensor(sensor=self, attr=sensor_name)
+            sensors_dict[sensor_name] = GenericSensor(sensor=self, attr=sensor_name, disabled_default=entities_disabled_default)
         self.sensors = sensors_dict
 
     @property
@@ -589,9 +590,10 @@ class DiscordAsyncMemberState(SensorEntity):
 
 
 class GenericSensor(SensorEntity):
-    def __init__(self, sensor: DiscordAsyncMemberState, attr: str):
+    def __init__(self, sensor: DiscordAsyncMemberState, attr: str, disabled_default: bool = False):
         self.sensor = sensor
         self.attr = attr
+        self._attr_entity_registry_enabled_default = not disabled_default
         self.entity_id = ENTITY_ID_FORMAT.format(self.sensor.userid) + "_" + self.attr
 
     @property

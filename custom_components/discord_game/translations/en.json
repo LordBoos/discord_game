@@ -8,7 +8,8 @@
         "data": {
           "access_token": "Discord Bot access token",
           "image_format": "Image format",
-          "steam_api_key": "Steam API Key (optional, needed for image loading)"
+          "steam_api_key": "Steam API Key (optional, needed for image loading)",
+          "entities_disabled_default": "Create sub-entities as disabled (only the main sensor per user will be enabled)"
         },
         "description": "Enter your Discord bot access token.\nHow to obtain the token is described on https://github.com/LordBoos/discord_game\n\nTo enable Steam game images, enter your Steam API key.\nYou can get one at https://steamcommunity.com/dev/apikey",
         "title": "Authentication"
@@ -31,7 +32,8 @@
         "data": {
           "access_token": "Discord Bot access token",
           "image_format": "Image format",
-          "steam_api_key": "Steam API Key (optional, needed for image loading)"
+          "steam_api_key": "Steam API Key (optional, needed for image loading)",
+          "entities_disabled_default": "Create sub-entities as disabled (only the main sensor per user will be enabled)"
         }
       },
       "members": {

@@ -7,7 +7,8 @@
         "data": {
           "access_token": "Token",
           "image_format": "Image format",
-          "steam_api_key": "Steam API Key"
+          "steam_api_key": "Steam API Key",
+          "entities_disabled_default": "Create sub-entities as disabled"
         }
       },
       "members": {
@@ -32,7 +33,8 @@
         "data": {
           "access_token": "Token",
           "image_format": "Image format",
-          "steam_api_key": "Steam API Key"
+          "steam_api_key": "Steam API Key",
+          "entities_disabled_default": "Create sub-entities as disabled"
         }
       },
       "members": {
