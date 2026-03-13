@@ -9,7 +9,7 @@ from homeassistant.const import CONF_ACCESS_TOKEN
 from homeassistant.helpers import selector
 from nextcord import LoginFailure
 
-from .const import DOMAIN, CONF_MEMBERS, CONF_CHANNELS, CONF_IMAGE_FORMAT, CONF_STEAM_API_KEY, CONF_ENTITIES_DISABLED_DEFAULT
+from .const import DOMAIN, CONF_MEMBERS, CONF_CHANNELS, CONF_VOICE_CHANNELS, CONF_IMAGE_FORMAT, CONF_STEAM_API_KEY, CONF_ENTITIES_DISABLED_DEFAULT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,6 +45,7 @@ async def _validate_auth_and_fetch_data(token: str):
 
         members = {}
         channels = {}
+        voice_channels = {}
 
         for guild in guilds:
             _members_iter = guild.fetch_members()
@@ -56,9 +57,13 @@ async def _validate_auth_and_fetch_data(token: str):
 
             _channels = await guild.fetch_channels()
             for channel in _channels:
-                channels[channel.name] = channel
+                if isinstance(channel, nextcord.VoiceChannel):
+                    voice_channels[channel.name] = channel
+                else:
+                    channels[channel.name] = channel
         _LOGGER.debug("members: %s", members)
         _LOGGER.debug("channels: %s", channels)
+        _LOGGER.debug("voice_channels: %s", voice_channels)
 
         user_names = list(members.keys())
         _LOGGER.debug("userNames: %s", user_names)
@@ -66,7 +71,10 @@ async def _validate_auth_and_fetch_data(token: str):
         channel_names = list(channels.keys())
         _LOGGER.debug("channelNames: %s", channel_names)
 
-        return members, user_names, channels, channel_names
+        voice_channel_names = list(voice_channels.keys())
+        _LOGGER.debug("voiceChannelNames: %s", voice_channel_names)
+
+        return members, user_names, channels, channel_names, voice_channels, voice_channel_names
     except LoginFailure:
         raise ValueError("Invalid access token")
     finally:
@@ -81,6 +89,8 @@ class DiscordGameConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self.user_names = []
         self.channels = {}
         self.channel_names = []
+        self.voice_channels = {}
+        self.voice_channel_names = []
 
     @staticmethod
     def async_get_options_flow(_config_entry):
@@ -90,7 +100,8 @@ class DiscordGameConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: Dict[str, str] = {}
         if user_input is not None:
             try:
-                self.members, self.user_names, self.channels, self.channel_names = \
+                self.members, self.user_names, self.channels, self.channel_names, \
+                    self.voice_channels, self.voice_channel_names = \
                     await _validate_auth_and_fetch_data(user_input[CONF_ACCESS_TOKEN])
             except ValueError:
                 errors["base"] = "auth"
@@ -98,6 +109,7 @@ class DiscordGameConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self.data = user_input
                 self.data[CONF_MEMBERS] = []
                 self.data[CONF_CHANNELS] = []
+                self.data[CONF_VOICE_CHANNELS] = []
 
                 return await self.async_step_members()
 
@@ -118,6 +130,11 @@ class DiscordGameConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                                   multiple=True,
                                                   mode=selector.SelectSelectorMode.DROPDOWN),
                 ),
+                vol.Optional(CONF_VOICE_CHANNELS): selector.SelectSelector(
+                    selector.SelectSelectorConfig(options=self.voice_channel_names,
+                                                  multiple=True,
+                                                  mode=selector.SelectSelectorMode.DROPDOWN),
+                ),
             }
         )
 
@@ -128,6 +145,9 @@ class DiscordGameConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if user_input.get(CONF_CHANNELS):
                 for channel in user_input.get(CONF_CHANNELS):
                     self.data[CONF_CHANNELS].append(self.channels.get(channel).id)
+            if user_input.get(CONF_VOICE_CHANNELS):
+                for channel in user_input.get(CONF_VOICE_CHANNELS):
+                    self.data[CONF_VOICE_CHANNELS].append(self.voice_channels.get(channel).id)
 
             return self.async_create_entry(title="Discord Game", data=self.data)
 
@@ -147,7 +167,8 @@ class DiscordGameOptionsFlow(config_entries.OptionsFlow):
         errors: Dict[str, str] = {}
         if user_input is not None:
             try:
-                self.members, self.user_names, self.channels, self.channel_names = \
+                self.members, self.user_names, self.channels, self.channel_names, \
+                    self.voice_channels, self.voice_channel_names = \
                     await _validate_auth_and_fetch_data(user_input[CONF_ACCESS_TOKEN])
             except ValueError:
                 errors["base"] = "auth"
@@ -155,6 +176,7 @@ class DiscordGameOptionsFlow(config_entries.OptionsFlow):
                 self.options_data = user_input
                 self.options_data[CONF_MEMBERS] = []
                 self.options_data[CONF_CHANNELS] = []
+                self.options_data[CONF_VOICE_CHANNELS] = []
                 return await self.async_step_members()
 
         current_token = self._get_current(CONF_ACCESS_TOKEN)
@@ -183,6 +205,7 @@ class DiscordGameOptionsFlow(config_entries.OptionsFlow):
         # Build a reverse lookup: ID -> name for pre-selecting current members/channels
         current_member_ids = set(self._get_current(CONF_MEMBERS, []))
         current_channel_ids = set(self._get_current(CONF_CHANNELS, []))
+        current_voice_channel_ids = set(self._get_current(CONF_VOICE_CHANNELS, []))
 
         preselected_members = [
             name for name, member in self.members.items()
@@ -191,6 +214,10 @@ class DiscordGameOptionsFlow(config_entries.OptionsFlow):
         preselected_channels = [
             name for name, channel in self.channels.items()
             if channel.id in current_channel_ids
+        ]
+        preselected_voice_channels = [
+            name for name, channel in self.voice_channels.items()
+            if channel.id in current_voice_channel_ids
         ]
 
         _MEMBERS_SCHEMA = vol.Schema(
@@ -202,6 +229,11 @@ class DiscordGameOptionsFlow(config_entries.OptionsFlow):
                 ),
                 vol.Optional(CONF_CHANNELS, default=preselected_channels): selector.SelectSelector(
                     selector.SelectSelectorConfig(options=self.channel_names,
+                                                  multiple=True,
+                                                  mode=selector.SelectSelectorMode.DROPDOWN),
+                ),
+                vol.Optional(CONF_VOICE_CHANNELS, default=preselected_voice_channels): selector.SelectSelector(
+                    selector.SelectSelectorConfig(options=self.voice_channel_names,
                                                   multiple=True,
                                                   mode=selector.SelectSelectorMode.DROPDOWN),
                 ),
@@ -218,6 +250,10 @@ class DiscordGameOptionsFlow(config_entries.OptionsFlow):
                 ch = self.channels.get(channel)
                 if ch:
                     self.options_data[CONF_CHANNELS].append(ch.id)
+            for channel in user_input.get(CONF_VOICE_CHANNELS, []):
+                ch = self.voice_channels.get(channel)
+                if ch:
+                    self.options_data[CONF_VOICE_CHANNELS].append(ch.id)
 
             return self.async_create_entry(title="", data=self.options_data)
 

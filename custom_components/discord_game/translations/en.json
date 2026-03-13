@@ -17,7 +17,8 @@
       "members": {
         "data": {
           "members": "Username of the Discord user (required)",
-          "channels": "Name of the Discord channel (optional)"
+          "channels": "Name of the Discord channel (optional)",
+          "voice_channels": "Name of the Discord voice channel (optional)"
         },
         "description": "Select Discord users and channels to track",
         "title": "Select Discord users and channels to track"
@@ -41,7 +42,8 @@
         "description": "Select Discord users and channels to track. Previously selected items are pre-selected.",
         "data": {
           "members": "Username of the Discord user (required)",
-          "channels": "Name of the Discord channel (optional)"
+          "channels": "Name of the Discord channel (optional)",
+          "voice_channels": "Name of the Discord voice channel (optional)"
         }
       }
     },

@@ -5,7 +5,8 @@
       "Bash(gh issue:*)",
       "WebFetch(domain:github.com)",
       "Bash(xargs cat:*)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(python3:*)"
     ]
   }
 }

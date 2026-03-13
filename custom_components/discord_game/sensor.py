@@ -20,12 +20,13 @@ from nextcord import ActivityType, Spotify, Game, Streaming, CustomActivity, Act
 from nextcord.abc import GuildChannel
 from nextcord.ext import tasks
 
-from .const import DOMAIN, CONF_MEMBERS, CONF_CHANNELS, CONF_IMAGE_FORMAT, CONF_STEAM_API_KEY, CONF_ENTITIES_DISABLED_DEFAULT
+from .const import DOMAIN, CONF_MEMBERS, CONF_CHANNELS, CONF_VOICE_CHANNELS, CONF_IMAGE_FORMAT, CONF_STEAM_API_KEY, CONF_ENTITIES_DISABLED_DEFAULT
 
 _LOGGER = logging.getLogger(__name__)
 
 ENTITY_ID_FORMAT = "sensor.discord_user_{}"
 ENTITY_ID_CHANNEL_FORMAT = "sensor.discord_channel_{}"
+ENTITY_ID_VOICE_CHANNEL_FORMAT = "sensor.discord_voice_channel_{}"
 
 _PATTERN_WITH_SIZE = re.compile(
     r'^https://cdn\.discordapp\.com/app-assets/\d+/mp:external/([^/]+)/(https/.+?)(_\d+)\.(?:png|jpg|jpeg|webp)$'
@@ -340,6 +341,15 @@ async def async_setup_entry(
                     sensor.async_schedule_update_ha_state(False)
         for name, _chan in channels.items():
             _chan.async_schedule_update_ha_state(False)
+        for _vch_id, _vch in voice_channels.items():
+            try:
+                vc = bot.get_channel(int(_vch_id))
+                if vc is not None:
+                    _vch._user_count = len(vc.members)
+                    _vch._members = [m.display_name for m in vc.members]
+            except Exception:
+                _LOGGER.debug("Could not initialize voice channel %s", _vch_id)
+            _vch.async_schedule_update_ha_state(False)
 
     # noinspection PyUnusedLocal
     @bot.event
@@ -388,6 +398,20 @@ async def async_setup_entry(
             for sensor in _watcher.sensors.values():
                 sensor.async_schedule_update_ha_state(False)
 
+        # Update voice channel entities when users join/leave/switch
+        if before.channel is not None:
+            _vch = voice_channels.get(str(before.channel.id))
+            if _vch is not None:
+                _vch._user_count = len(before.channel.members)
+                _vch._members = [m.display_name for m in before.channel.members]
+                _vch.async_schedule_update_ha_state(False)
+        if after.channel is not None:
+            _vch = voice_channels.get(str(after.channel.id))
+            if _vch is not None:
+                _vch._user_count = len(after.channel.members)
+                _vch._members = [m.display_name for m in after.channel.members]
+                _vch.async_schedule_update_ha_state(False)
+
     @bot.event
     async def on_raw_reaction_add(payload: RawReactionActionEvent):
         channel_id = payload.channel_id
@@ -416,6 +440,14 @@ async def async_setup_entry(
                 ch: DiscordAsyncReactionState = DiscordAsyncReactionState(hass, bot, chan.name, chan.id)
                 channels[ch.name] = ch
 
+    voice_channels = {}
+    for channel in config.get(CONF_VOICE_CHANNELS, []):
+        if re.match(r"^\d{,20}", str(channel)):  # Up to 20 digits because 2^64 (snowflake-length) is 20 digits long
+            chan = await bot.fetch_channel(channel)
+            if chan:
+                vch: DiscordAsyncVoiceChannelState = DiscordAsyncVoiceChannelState(hass, bot, chan.name, chan.id)
+                voice_channels[str(chan.id)] = vch
+
     # Remove entities for users/channels no longer in config
     ent_reg = er.async_get(hass)
     current_unique_ids = set()
@@ -425,6 +457,8 @@ async def async_setup_entry(
             current_unique_ids.add(s.unique_id)
     for ch in channels.values():
         current_unique_ids.add(ch.unique_id)
+    for vch in voice_channels.values():
+        current_unique_ids.add(vch.unique_id)
 
     dev_reg = dr.async_get(hass)
     for entity in er.async_entries_for_config_entry(ent_reg, config_entry.entry_id):
@@ -443,6 +477,7 @@ async def async_setup_entry(
         for sensors in watchers.values():
             async_add_entities(sensors.sensors.values())
         async_add_entities(channels.values())
+        async_add_entities(voice_channels.values())
         hass.bus.async_fire("discord_game_setup_finished")
 
 
@@ -672,4 +707,47 @@ class DiscordAsyncReactionState(SensorEntity):
         """Return the state attributes."""
         return {
             'last_user': self._last_user
+        }
+
+
+class DiscordAsyncVoiceChannelState(SensorEntity):
+    def __init__(self, hass, client, channel, channelid):
+        self._channel_name = channel
+        self._channel_id = channelid
+        self._hass = hass
+        self._client = client
+        self._user_count = 0
+        self._members = []
+        self.entity_id = ENTITY_ID_VOICE_CHANNEL_FORMAT.format(self._channel_id)
+
+    @property
+    def should_poll(self) -> bool:
+        return False
+
+    @property
+    def native_value(self) -> int:
+        return self._user_count
+
+    @property
+    def unique_id(self):
+        """Return a unique ID."""
+        return ENTITY_ID_VOICE_CHANNEL_FORMAT.format(self._channel_id)
+
+    @property
+    def name(self):
+        return self._channel_name
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self.unique_id)},
+            name=self._channel_name
+        )
+
+    @property
+    def extra_state_attributes(self):
+        """Return the state attributes."""
+        return {
+            'members': self._members
         }
