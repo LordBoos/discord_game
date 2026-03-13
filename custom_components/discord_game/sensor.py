@@ -260,7 +260,10 @@ async def async_setup_entry(
         _watcher.async_schedule_update_ha_state(False)
 
     async def update_discord_entity_user(_watcher: DiscordAsyncMemberState, discord_user: User):
-        _watcher.avatar_url = discord_user.display_avatar.with_size(1024).with_static_format(image_format).__str__()
+        if discord_user.avatar:
+            _watcher.avatar_url = discord_user.display_avatar.with_size(1024).with_static_format(image_format).__str__()
+        else:
+            _watcher.avatar_url = discord_user.default_avatar.url
         _watcher.userid = discord_user.id
         _watcher.member = discord_user.name
         _watcher.user_name = discord_user.global_name
