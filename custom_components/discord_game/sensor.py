@@ -14,6 +14,7 @@ from homeassistant import config_entries, core
 from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
 from homeassistant.const import CONF_ACCESS_TOKEN
 from homeassistant.const import (EVENT_HOMEASSISTANT_STOP)
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from nextcord import ActivityType, Spotify, Game, Streaming, CustomActivity, Activity, Member, User, VoiceState, RawReactionActionEvent
 from nextcord.abc import GuildChannel
@@ -410,6 +411,28 @@ async def async_setup_entry(
             if chan:
                 ch: DiscordAsyncReactionState = DiscordAsyncReactionState(hass, bot, chan.name, chan.id)
                 channels[ch.name] = ch
+
+    # Remove entities for users/channels no longer in config
+    ent_reg = er.async_get(hass)
+    current_unique_ids = set()
+    for w in watchers.values():
+        current_unique_ids.add(w.unique_id)
+        for s in w.sensors.values():
+            current_unique_ids.add(s.unique_id)
+    for ch in channels.values():
+        current_unique_ids.add(ch.unique_id)
+
+    dev_reg = dr.async_get(hass)
+    for entity in er.async_entries_for_config_entry(ent_reg, config_entry.entry_id):
+        if entity.unique_id not in current_unique_ids:
+            _LOGGER.debug("Removing stale entity %s (unique_id=%s)", entity.entity_id, entity.unique_id)
+            ent_reg.async_remove(entity.entity_id)
+
+    # Remove devices that no longer have any entities
+    for device in dr.async_entries_for_config_entry(dev_reg, config_entry.entry_id):
+        if not er.async_entries_for_device(ent_reg, device.id, include_disabled_entities=True):
+            _LOGGER.debug("Removing orphaned device %s (id=%s)", device.name, device.id)
+            dev_reg.async_remove_device(device.id)
 
     if len(watchers) > 0:
         async_add_entities(watchers.values())
