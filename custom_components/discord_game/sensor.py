@@ -325,13 +325,13 @@ async def async_setup_entry(
 
     @bot.event
     async def on_ready():
-        users = {"{}".format(_user): _user for _user in bot.users}
-        members = {"{}".format(_member): _member for _member in list(bot.get_all_members())}
-        for name, _watcher in watchers.items():
-            if users.get(name) is not None:
-                await update_discord_entity_user(_watcher, users.get(name))
-            if members.get(name) is not None:
-                await update_discord_entity(_watcher, members.get(name))
+        users = {str(_user.id): _user for _user in bot.users}
+        members = {str(_member.id): _member for _member in list(bot.get_all_members())}
+        for _watcher_id, _watcher in watchers.items():
+            if users.get(_watcher_id) is not None:
+                await update_discord_entity_user(_watcher, users.get(_watcher_id))
+            if members.get(_watcher_id) is not None:
+                await update_discord_entity(_watcher, members.get(_watcher_id))
                 for sensor in _watcher.sensors.values():
                     sensor.async_schedule_update_ha_state(False)
         for name, _chan in channels.items():
@@ -340,7 +340,7 @@ async def async_setup_entry(
     # noinspection PyUnusedLocal
     @bot.event
     async def on_member_update(before: Member, after: Member):
-        _watcher = watchers.get("{}".format(after))
+        _watcher = watchers.get(str(after.id))
         if _watcher is not None:
             await update_discord_entity(_watcher, after)
             for sensor in _watcher.sensors.values():
@@ -349,7 +349,7 @@ async def async_setup_entry(
     # noinspection PyUnusedLocal
     @bot.event
     async def on_presence_update(before: Member, after: Member):
-        _watcher = watchers.get("{}".format(after))
+        _watcher = watchers.get(str(after.id))
         if _watcher is not None:
             await update_discord_entity(_watcher, after)
             for sensor in _watcher.sensors.values():
@@ -358,7 +358,7 @@ async def async_setup_entry(
     # noinspection PyUnusedLocal
     @bot.event
     async def on_user_update(before: User, after: User):
-        _watcher: DiscordAsyncMemberState = watchers.get("{}".format(after))
+        _watcher: DiscordAsyncMemberState = watchers.get(str(after.id))
         if _watcher is not None:
             await update_discord_entity_user(_watcher, after)
             for sensor in _watcher.sensors.values():
@@ -367,7 +367,7 @@ async def async_setup_entry(
     # noinspection PyUnusedLocal
     @bot.event
     async def on_voice_state_update(_member: Member, before: VoiceState, after: VoiceState):
-        _watcher = watchers.get("{}".format(_member))
+        _watcher = watchers.get(str(_member.id))
         if _watcher is not None:
             if after.channel is not None:
                 _watcher.voice_channel = after.channel.name
@@ -402,7 +402,7 @@ async def async_setup_entry(
             if user:
                 watcher: DiscordAsyncMemberState = \
                     DiscordAsyncMemberState(hass, bot, user.name, user.global_name, user.id)
-                watchers[watcher.name] = watcher
+                watchers[str(user.id)] = watcher
 
     channels = {}
     for channel in config.get(CONF_CHANNELS):

@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "Bash(gh issue:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(xargs cat:*)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }
