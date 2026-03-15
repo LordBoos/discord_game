@@ -258,7 +258,8 @@ async def async_setup_entry(
                 _watcher.custom_status = activity.name
                 _watcher.custom_emoji = activity.emoji.name if activity.emoji else None
 
-        _watcher.async_schedule_update_ha_state(False)
+        if _watcher.hass is not None:
+            _watcher.async_schedule_update_ha_state(False)
 
     async def update_discord_entity_user(_watcher: DiscordAsyncMemberState, discord_user: User):
         if discord_user.avatar:
@@ -268,7 +269,8 @@ async def async_setup_entry(
         _watcher.userid = discord_user.id
         _watcher.member = discord_user.name
         _watcher.user_name = discord_user.global_name
-        _watcher.async_schedule_update_ha_state(False)
+        if _watcher.hass is not None:
+            _watcher.async_schedule_update_ha_state(False)
 
     def to_media_discord_url(url: str) -> str:
         if not url or "mp:external" not in url:
@@ -338,18 +340,25 @@ async def async_setup_entry(
             if members.get(_watcher_id) is not None:
                 await update_discord_entity(_watcher, members.get(_watcher_id))
                 for sensor in _watcher.sensors.values():
-                    sensor.async_schedule_update_ha_state(False)
+                    if sensor.hass is not None:
+                        sensor.async_schedule_update_ha_state(False)
         for name, _chan in channels.items():
-            _chan.async_schedule_update_ha_state(False)
+            if _chan.hass is not None:
+                _chan.async_schedule_update_ha_state(False)
         for _vch_id, _vch in voice_channels.items():
             try:
                 vc = bot.get_channel(int(_vch_id))
                 if vc is not None:
                     _vch._user_count = len(vc.members)
                     _vch._members = [m.display_name for m in vc.members]
+                    _vch._member_usernames = [m.name for m in vc.members]
             except Exception:
                 _LOGGER.debug("Could not initialize voice channel %s", _vch_id)
-            _vch.async_schedule_update_ha_state(False)
+            if _vch.hass is not None:
+                _vch.async_schedule_update_ha_state(False)
+                for sensor in _vch.sensors.values():
+                    if sensor.hass is not None:
+                        sensor.async_schedule_update_ha_state(False)
 
     # noinspection PyUnusedLocal
     @bot.event
@@ -404,13 +413,21 @@ async def async_setup_entry(
             if _vch is not None:
                 _vch._user_count = len(before.channel.members)
                 _vch._members = [m.display_name for m in before.channel.members]
+                _vch._member_usernames = [m.name for m in before.channel.members]
                 _vch.async_schedule_update_ha_state(False)
+                for sensor in _vch.sensors.values():
+                    if sensor.hass is not None:
+                        sensor.async_schedule_update_ha_state(False)
         if after.channel is not None:
             _vch = voice_channels.get(str(after.channel.id))
             if _vch is not None:
                 _vch._user_count = len(after.channel.members)
                 _vch._members = [m.display_name for m in after.channel.members]
+                _vch._member_usernames = [m.name for m in after.channel.members]
                 _vch.async_schedule_update_ha_state(False)
+                for sensor in _vch.sensors.values():
+                    if sensor.hass is not None:
+                        sensor.async_schedule_update_ha_state(False)
 
     @bot.event
     async def on_raw_reaction_add(payload: RawReactionActionEvent):
@@ -445,7 +462,7 @@ async def async_setup_entry(
         if re.match(r"^\d{,20}", str(channel)):  # Up to 20 digits because 2^64 (snowflake-length) is 20 digits long
             chan = await bot.fetch_channel(channel)
             if chan:
-                vch: DiscordAsyncVoiceChannelState = DiscordAsyncVoiceChannelState(hass, bot, chan.name, chan.id)
+                vch: DiscordAsyncVoiceChannelState = DiscordAsyncVoiceChannelState(hass, bot, chan.name, chan.id, entities_disabled_default)
                 voice_channels[str(chan.id)] = vch
 
     # Remove entities for users/channels no longer in config
@@ -459,6 +476,8 @@ async def async_setup_entry(
         current_unique_ids.add(ch.unique_id)
     for vch in voice_channels.values():
         current_unique_ids.add(vch.unique_id)
+        for s in vch.sensors.values():
+            current_unique_ids.add(s.unique_id)
 
     dev_reg = dr.async_get(hass)
     for entity in er.async_entries_for_config_entry(ent_reg, config_entry.entry_id):
@@ -472,12 +491,31 @@ async def async_setup_entry(
             _LOGGER.debug("Removing orphaned device %s (id=%s)", device.name, device.id)
             dev_reg.async_remove_device(device.id)
 
+    # Sync existing sub-entity enabled/disabled state with the toggle.
+    # _attr_entity_registry_enabled_default only applies on first registration,
+    # so we must explicitly update registry entries for already-registered entities.
+    sub_entity_unique_ids = set()
+    for w in watchers.values():
+        for s in w.sensors.values():
+            sub_entity_unique_ids.add(s.unique_id)
+    for vch in voice_channels.values():
+        for s in vch.sensors.values():
+            sub_entity_unique_ids.add(s.unique_id)
+    for entity in er.async_entries_for_config_entry(ent_reg, config_entry.entry_id):
+        if entity.unique_id in sub_entity_unique_ids:
+            if entities_disabled_default and entity.disabled_by is None:
+                ent_reg.async_update_entity(entity.entity_id, disabled_by=er.RegistryEntryDisabler.INTEGRATION)
+            elif not entities_disabled_default and entity.disabled_by == er.RegistryEntryDisabler.INTEGRATION:
+                ent_reg.async_update_entity(entity.entity_id, disabled_by=None)
+
     if len(watchers) > 0:
         async_add_entities(watchers.values())
         for sensors in watchers.values():
             async_add_entities(sensors.sensors.values())
         async_add_entities(channels.values())
         async_add_entities(voice_channels.values())
+        for vch in voice_channels.values():
+            async_add_entities(vch.sensors.values())
         hass.bus.async_fire("discord_game_setup_finished")
 
 
@@ -711,14 +749,19 @@ class DiscordAsyncReactionState(SensorEntity):
 
 
 class DiscordAsyncVoiceChannelState(SensorEntity):
-    def __init__(self, hass, client, channel, channelid):
+    def __init__(self, hass, client, channel, channelid, entities_disabled_default=False):
         self._channel_name = channel
         self._channel_id = channelid
         self._hass = hass
         self._client = client
         self._user_count = 0
         self._members = []
+        self._member_usernames = []
         self.entity_id = ENTITY_ID_VOICE_CHANNEL_FORMAT.format(self._channel_id)
+        self.sensors = {
+            "display_names": VoiceChannelMembersSensor(self, "display_names", entities_disabled_default),
+            "usernames": VoiceChannelMembersSensor(self, "usernames", entities_disabled_default),
+        }
 
     @property
     def should_poll(self) -> bool:
@@ -749,5 +792,41 @@ class DiscordAsyncVoiceChannelState(SensorEntity):
     def extra_state_attributes(self):
         """Return the state attributes."""
         return {
-            'members': self._members
+            'members': self._members,
+            'member_usernames': self._member_usernames
         }
+
+
+class VoiceChannelMembersSensor(SensorEntity):
+    def __init__(self, voice_channel: DiscordAsyncVoiceChannelState, attr: str, disabled_default: bool = False):
+        self.voice_channel = voice_channel
+        self.attr = attr
+        self._attr_entity_registry_enabled_default = not disabled_default
+        self.entity_id = ENTITY_ID_VOICE_CHANNEL_FORMAT.format(self.voice_channel._channel_id) + "_" + self.attr
+
+    @property
+    def should_poll(self) -> bool:
+        return False
+
+    @property
+    def native_value(self) -> str:
+        if self.attr == "display_names":
+            return ", ".join(self.voice_channel._members) if self.voice_channel._members else ""
+        return ", ".join(self.voice_channel._member_usernames) if self.voice_channel._member_usernames else ""
+
+    @property
+    def unique_id(self):
+        """Return a unique ID."""
+        return ENTITY_ID_VOICE_CHANNEL_FORMAT.format(self.voice_channel._channel_id) + "_" + self.attr
+
+    @property
+    def name(self):
+        return self.voice_channel._channel_name + " " + self.attr
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self.voice_channel.unique_id)},
+            name=self.voice_channel._channel_name
+        )
