@@ -72,13 +72,63 @@ async def async_setup_entry(
     bot = nextcord.Client(loop=hass.loop, intents=nextcord.Intents.all())
     await bot.login(token)
 
+    bot._dc_game_connected = False
+    bot_shutting_down = False
+
     # noinspection PyUnusedLocal
     async def async_stop_server(event):
+        nonlocal bot_shutting_down
+        bot_shutting_down = True
         await bot.close()
 
+    def _update_all_entity_states():
+        """Push state update to all entities so availability changes are reflected."""
+        for _watcher in watchers.values():
+            if _watcher.hass is not None:
+                _watcher.async_schedule_update_ha_state(False)
+            for sensor in _watcher.sensors.values():
+                if sensor.hass is not None:
+                    sensor.async_schedule_update_ha_state(False)
+        for _chan in channels.values():
+            if _chan.hass is not None:
+                _chan.async_schedule_update_ha_state(False)
+        for _vch in voice_channels.values():
+            if _vch.hass is not None:
+                _vch.async_schedule_update_ha_state(False)
+            for sensor in _vch.sensors.values():
+                if sensor.hass is not None:
+                    sensor.async_schedule_update_ha_state(False)
+
+    async def _reconnect_bot():
+        """Reconnect the bot with exponential backoff."""
+        delay = 10
+        max_delay = 300
+        while not bot_shutting_down:
+            _LOGGER.info("Attempting to reconnect Discord bot in %s seconds...", delay)
+            await asyncio.sleep(delay)
+            if bot_shutting_down:
+                break
+            try:
+                _LOGGER.info("Reconnecting Discord bot...")
+                task = asyncio.create_task(bot.start(token))
+                task.add_done_callback(task_callback)
+                return
+            except Exception as err:
+                _LOGGER.error("Failed to reconnect Discord bot: %s", err)
+                delay = min(delay * 2, max_delay)
+
     def task_callback(task: asyncio.Task):
-        # placeholder
-        pass
+        bot._dc_game_connected = False
+        _update_all_entity_states()
+        if bot_shutting_down:
+            _LOGGER.debug("Discord bot stopped (shutdown requested)")
+            return
+        exc = task.exception() if not task.cancelled() else None
+        if exc:
+            _LOGGER.error("Discord bot task failed with error: %s", exc)
+        else:
+            _LOGGER.warning("Discord bot task ended unexpectedly")
+        asyncio.ensure_future(_reconnect_bot())
 
     # noinspection PyUnusedLocal
     async def start_server(event):
@@ -147,7 +197,7 @@ async def async_setup_entry(
     # noinspection PyUnusedLocal
     @bot.event
     async def on_error(error, *args, **kwargs):
-        raise
+        _LOGGER.error("Discord bot error in %s: %s", error, args)
 
     async def update_discord_entity(_watcher: DiscordAsyncMemberState, discord_member: Member):
         _watcher._state = discord_member.status
@@ -332,6 +382,8 @@ async def async_setup_entry(
 
     @bot.event
     async def on_ready():
+        bot._dc_game_connected = True
+        _LOGGER.info("Discord bot connected (on_ready)")
         users = {str(_user.id): _user for _user in bot.users}
         members = {str(_member.id): _member for _member in list(bot.get_all_members())}
         for _watcher_id, _watcher in watchers.items():
@@ -359,6 +411,20 @@ async def async_setup_entry(
                 for sensor in _vch.sensors.values():
                     if sensor.hass is not None:
                         sensor.async_schedule_update_ha_state(False)
+
+    @bot.event
+    async def on_disconnect():
+        if bot._dc_game_connected:
+            bot._dc_game_connected = False
+            _LOGGER.warning("Discord bot disconnected")
+            _update_all_entity_states()
+
+    @bot.event
+    async def on_resumed():
+        if not bot._dc_game_connected:
+            bot._dc_game_connected = True
+            _LOGGER.info("Discord bot resumed connection")
+            _update_all_entity_states()
 
     # noinspection PyUnusedLocal
     @bot.event
@@ -589,6 +655,10 @@ class DiscordAsyncMemberState(SensorEntity):
         )
 
     @property
+    def available(self) -> bool:
+        return getattr(self.client, '_dc_game_connected', False)
+
+    @property
     def should_poll(self) -> bool:
         return False
 
@@ -673,6 +743,10 @@ class GenericSensor(SensorEntity):
         self.entity_id = ENTITY_ID_FORMAT.format(self.sensor.userid) + "_" + self.attr
 
     @property
+    def available(self) -> bool:
+        return self.sensor.available
+
+    @property
     def should_poll(self) -> bool:
         return False
 
@@ -714,6 +788,10 @@ class DiscordAsyncReactionState(SensorEntity):
         self._state = 'unknown'
         self._last_user = None
         self.entity_id = ENTITY_ID_CHANNEL_FORMAT.format(self._channel_id)
+
+    @property
+    def available(self) -> bool:
+        return getattr(self._client, '_dc_game_connected', False)
 
     @property
     def should_poll(self) -> bool:
@@ -764,6 +842,10 @@ class DiscordAsyncVoiceChannelState(SensorEntity):
         }
 
     @property
+    def available(self) -> bool:
+        return getattr(self._client, '_dc_game_connected', False)
+
+    @property
     def should_poll(self) -> bool:
         return False
 
@@ -803,6 +885,10 @@ class VoiceChannelMembersSensor(SensorEntity):
         self.attr = attr
         self._attr_entity_registry_enabled_default = not disabled_default
         self.entity_id = ENTITY_ID_VOICE_CHANNEL_FORMAT.format(self.voice_channel._channel_id) + "_" + self.attr
+
+    @property
+    def available(self) -> bool:
+        return self.voice_channel.available
 
     @property
     def should_poll(self) -> bool:
