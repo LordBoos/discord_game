@@ -46,7 +46,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_IMAGE_FORMAT, default='webp'): vol.In(['png', 'webp', 'jpeg', 'jpg']),
 })
 
-SENSORS = ["user_name", "display_name", "roles", "game", "game_state", "game_details", "game_image_small", "game_image_large",
+SENSORS = ["user_name", "display_name", "desktop_status", "mobile_status", "web_status", "roles", "game", "game_state", "game_details", "game_image_small", "game_image_large",
            "game_image_small_text", "game_image_large_text", "game_image_capsule_231x87", "game_image_capsule_467x181",
            "game_image_capsule_616x353", "game_image_header", "game_image_hero_capsule", "game_image_library_600x900", "game_image_library_hero",
            "game_image_logo", "game_image_page_bg_raw", "streaming", "streaming_url", "streaming_details", "listening", "listening_url",
@@ -201,6 +201,9 @@ async def async_setup_entry(
 
     async def update_discord_entity(_watcher: DiscordAsyncMemberState, discord_member: Member):
         _watcher._state = discord_member.status
+        _watcher.desktop_status = str(discord_member.desktop_status)
+        _watcher.mobile_status = str(discord_member.mobile_status)
+        _watcher.web_status = str(discord_member.web_status)
         _watcher.roles = [role.name for role in discord_member.roles]
         _watcher.display_name = discord_member.display_name
         _watcher.activity_state = None
@@ -595,6 +598,9 @@ class DiscordAsyncMemberState(SensorEntity):
         self.activity_state = 'unknown'
         self.user_name = user_name
         self.display_name = None
+        self.desktop_status = None
+        self.mobile_status = None
+        self.web_status = None
         self.roles = None
         self.game = None
         self.game_state = None
@@ -688,6 +694,9 @@ class DiscordAsyncMemberState(SensorEntity):
             'user_id': str(self.userid),
             'user_name': self.user_name,
             'display_name': self.display_name,
+            'desktop_status': self.desktop_status,
+            'mobile_status': self.mobile_status,
+            'web_status': self.web_status,
             'roles': self.roles,
             'game': self.game,
             'game_state': self.game_state,
