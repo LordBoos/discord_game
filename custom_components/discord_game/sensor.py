@@ -28,6 +28,10 @@ ENTITY_ID_FORMAT = "sensor.discord_user_{}"
 ENTITY_ID_CHANNEL_FORMAT = "sensor.discord_channel_{}"
 ENTITY_ID_VOICE_CHANNEL_FORMAT = "sensor.discord_voice_channel_{}"
 
+# How long a gateway disconnect must last before entities are marked unavailable.
+# Short websocket drops that resume within this window are invisible to HA.
+DISCONNECT_GRACE_PERIOD = 120
+
 _PATTERN_WITH_SIZE = re.compile(
     r'^https://cdn\.discordapp\.com/app-assets/\d+/mp:external/([^/]+)/(https/.+?)(_\d+)\.(?:png|jpg|jpeg|webp)$'
 )
@@ -74,6 +78,7 @@ async def async_setup_entry(
 
     bot._dc_game_connected = False
     bot_shutting_down = False
+    disconnect_grace_task: Union[asyncio.Task, None] = None
 
     # noinspection PyUnusedLocal
     async def async_stop_server(event):
@@ -99,6 +104,23 @@ async def async_setup_entry(
                 if sensor.hass is not None:
                     sensor.async_schedule_update_ha_state(False)
 
+    def _cancel_disconnect_grace():
+        nonlocal disconnect_grace_task
+        if disconnect_grace_task is not None and not disconnect_grace_task.done():
+            disconnect_grace_task.cancel()
+        disconnect_grace_task = None
+
+    async def _mark_unavailable_after_grace():
+        """Mark entities unavailable only if the disconnect outlasts the grace period."""
+        try:
+            await asyncio.sleep(DISCONNECT_GRACE_PERIOD)
+        except asyncio.CancelledError:
+            return
+        if bot._dc_game_connected:
+            bot._dc_game_connected = False
+            _LOGGER.warning("Discord bot disconnected for more than %s seconds, marking entities unavailable", DISCONNECT_GRACE_PERIOD)
+            _update_all_entity_states()
+
     async def _reconnect_bot():
         """Reconnect the bot with exponential backoff."""
         delay = 10
@@ -118,6 +140,7 @@ async def async_setup_entry(
                 delay = min(delay * 2, max_delay)
 
     def task_callback(task: asyncio.Task):
+        _cancel_disconnect_grace()
         bot._dc_game_connected = False
         _update_all_entity_states()
         if bot_shutting_down:
@@ -385,6 +408,7 @@ async def async_setup_entry(
 
     @bot.event
     async def on_ready():
+        _cancel_disconnect_grace()
         bot._dc_game_connected = True
         _LOGGER.info("Discord bot connected (on_ready)")
         users = {str(_user.id): _user for _user in bot.users}
@@ -417,13 +441,14 @@ async def async_setup_entry(
 
     @bot.event
     async def on_disconnect():
-        if bot._dc_game_connected:
-            bot._dc_game_connected = False
-            _LOGGER.warning("Discord bot disconnected")
-            _update_all_entity_states()
+        nonlocal disconnect_grace_task
+        if bot._dc_game_connected and (disconnect_grace_task is None or disconnect_grace_task.done()):
+            _LOGGER.debug("Discord bot disconnected, waiting %s seconds before marking entities unavailable", DISCONNECT_GRACE_PERIOD)
+            disconnect_grace_task = asyncio.create_task(_mark_unavailable_after_grace())
 
     @bot.event
     async def on_resumed():
+        _cancel_disconnect_grace()
         if not bot._dc_game_connected:
             bot._dc_game_connected = True
             _LOGGER.info("Discord bot resumed connection")
