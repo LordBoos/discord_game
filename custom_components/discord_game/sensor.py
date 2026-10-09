@@ -155,6 +155,8 @@ async def async_setup_entry(
 
     # noinspection PyUnusedLocal
     async def start_server(event):
+        if bot_shutting_down:  # entry was unloaded before setup finished
+            return
         _LOGGER.debug("Starting server - config flow")
         hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, async_stop_server)
         await load_application_list_cache()
@@ -168,6 +170,13 @@ async def async_setup_entry(
         await load_application_list_cache()
 
     refresh_application_lists.start()
+
+    async def async_unload():
+        refresh_application_lists.cancel()
+        _cancel_disconnect_grace()
+        await async_stop_server(None)
+
+    config_entry.async_on_unload(async_unload)
 
     async def load_application_list_cache():
         await load_steam_application_list()
@@ -461,7 +470,8 @@ async def async_setup_entry(
         if _watcher is not None:
             await update_discord_entity(_watcher, after)
             for sensor in _watcher.sensors.values():
-                sensor.async_schedule_update_ha_state(False)
+                if sensor.hass is not None:
+                    sensor.async_schedule_update_ha_state(False)
 
     # noinspection PyUnusedLocal
     @bot.event
@@ -470,7 +480,8 @@ async def async_setup_entry(
         if _watcher is not None:
             await update_discord_entity(_watcher, after)
             for sensor in _watcher.sensors.values():
-                sensor.async_schedule_update_ha_state(False)
+                if sensor.hass is not None:
+                    sensor.async_schedule_update_ha_state(False)
 
     # noinspection PyUnusedLocal
     @bot.event
@@ -479,7 +490,8 @@ async def async_setup_entry(
         if _watcher is not None:
             await update_discord_entity_user(_watcher, after)
             for sensor in _watcher.sensors.values():
-                sensor.async_schedule_update_ha_state(False)
+                if sensor.hass is not None:
+                    sensor.async_schedule_update_ha_state(False)
 
     # noinspection PyUnusedLocal
     @bot.event
@@ -497,9 +509,11 @@ async def async_setup_entry(
             _watcher.voice_self_stream = after.self_stream
             _watcher.voice_self_video = after.self_video
             _watcher.voice_afk = after.afk
-            _watcher.async_schedule_update_ha_state(False)
+            if _watcher.hass is not None:
+                _watcher.async_schedule_update_ha_state(False)
             for sensor in _watcher.sensors.values():
-                sensor.async_schedule_update_ha_state(False)
+                if sensor.hass is not None:
+                    sensor.async_schedule_update_ha_state(False)
 
         # Update voice channel entities when users join/leave/switch
         if before.channel is not None:
@@ -508,7 +522,8 @@ async def async_setup_entry(
                 _vch._user_count = len(before.channel.members)
                 _vch._members = [m.display_name for m in before.channel.members]
                 _vch._member_usernames = [m.name for m in before.channel.members]
-                _vch.async_schedule_update_ha_state(False)
+                if _vch.hass is not None:
+                    _vch.async_schedule_update_ha_state(False)
                 for sensor in _vch.sensors.values():
                     if sensor.hass is not None:
                         sensor.async_schedule_update_ha_state(False)
@@ -518,7 +533,8 @@ async def async_setup_entry(
                 _vch._user_count = len(after.channel.members)
                 _vch._members = [m.display_name for m in after.channel.members]
                 _vch._member_usernames = [m.name for m in after.channel.members]
-                _vch.async_schedule_update_ha_state(False)
+                if _vch.hass is not None:
+                    _vch.async_schedule_update_ha_state(False)
                 for sensor in _vch.sensors.values():
                     if sensor.hass is not None:
                         sensor.async_schedule_update_ha_state(False)
@@ -532,7 +548,8 @@ async def async_setup_entry(
         if _chan:
             _chan._state = _member.display_name
             _chan._last_user = _member.display_name
-            _chan.async_schedule_update_ha_state(False)
+            if _chan.hass is not None:
+                _chan.async_schedule_update_ha_state(False)
 
     watchers = {}
     for member in config.get(CONF_MEMBERS):
