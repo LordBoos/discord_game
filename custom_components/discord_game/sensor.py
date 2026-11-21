@@ -73,7 +73,18 @@ async def async_setup_entry(
     steam_api_key = config.get(CONF_STEAM_API_KEY)
     entities_disabled_default = config.get(CONF_ENTITIES_DISABLED_DEFAULT, False)
 
-    bot = nextcord.Client(loop=hass.loop, intents=nextcord.Intents.all())
+    # This integration defines no slash commands. nextcord's default rollout would
+    # treat every command on Discord as "unknown" and delete it – on each connect
+    # (global commands) and on each interaction (that guild's commands). When the
+    # bot token is shared with another bot, that wipes the other bot's commands.
+    bot = nextcord.Client(
+        loop=hass.loop,
+        intents=nextcord.Intents.all(),
+        rollout_associate_known=False,
+        rollout_delete_unknown=False,
+        rollout_update_known=False,
+        rollout_register_new=False,
+    )
     await bot.login(token)
 
     bot._dc_game_connected = False
